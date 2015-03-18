@@ -1,0 +1,44 @@
+<h1>Simple variables</h1>
+<br>
+<table>
+	<tr>
+		<td>Name: </td><td><?php echo @$user['name']; ?></td>
+	</tr>
+	<tr>
+		<td>Last name: </td><td><?php echo @$user['last_name']; ?></td>
+	</tr>
+	<tr>
+		<td>Email: </td><td><?php echo @$user['email']; ?></td>
+	</tr>
+</table>
+<p>Now: <?php echo @self::dateFormatCustom($now,"c"); ?></p>
+<h2>Modifiers</h2>
+<table>
+	<tr>
+		<td>Name: </td><td><?php echo @strtoupper($user['name']); ?></td>
+	</tr>
+	<tr>
+		<td>Nickname: </td><td><?php echo @ucwords((strtolower($user['name']) == "ricardo" ? "ricky" : strtolower($user['name']))); ?></td>
+	</tr>
+	<tr>
+		<td>Extra: </td><td><?php echo @substr($user['extra'],0,20).(strlen($user['extra']) > 20 ? "..." : ""); ?></td>
+	</tr>
+</table>
+<hr>
+<h1>Control structures</h1>
+<h2>If conditionals</h2>
+<?php if(@strtoupper($user_role) == "ADMIN"): ?>
+    <p>Welcome Administrator</p>
+<?php elseif(@strtoupper($user_role) == "MEMBER" || strtoupper($user_role) == "TEAM"): ?>
+    <p>Welcome member of the community</p>
+<?php else: ?>
+    <p>You are not a registered user</p>
+<?php endif; ?>
+<h2>Loops</h2>
+<ul>
+<?php foreach($users as  $user): ?>
+	<li>User: <?php echo @ucwords($user['name']); ?>  Email: <?php echo @$user['email']; ?>  Role: <?php echo @strtoupper(($user['role'] == "admin" ? "administrator" : $user['role'])); ?></li>
+<?php endforeach; ?>
+</ul>
+
+<div style="padding-top: 20px; margin-top: 20px">Tonic&copy; <?php echo @self::dateFormatCustom($now,"Y"); ?></div>

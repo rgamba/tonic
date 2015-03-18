@@ -46,9 +46,9 @@ class Tonic{
     private $source;
     private $content;
     private $is_php = false;
-    private $enable_content_cache = false;
-    private $cache_dir = "cache/";
-    private $cache_lifetime = 86400;
+    public $enable_content_cache = false;
+    public $cache_dir = "cache/";
+    public $cache_lifetime = 86400;
 
     /**
      * Object constructor
@@ -65,6 +65,7 @@ class Tonic{
         if(!is_array($g))
             return false;
         self::$globals=$g;
+        return $this;
     }
 
     /**
@@ -84,6 +85,7 @@ class Tonic{
             $this->source=file_get_contents($this->file);
             $this->content=&$this->source;
         }
+        return $this;
     }
     
     /**
@@ -94,6 +96,7 @@ class Tonic{
     public function loadFromString($str){
         $this->source=$str;
         $this->content=&$this->source;
+        return $this;
     }
 
     /**
@@ -103,6 +106,7 @@ class Tonic{
      */
     public function assign($var,$val){
         $this->assigned[$var]=$val;
+        return $this;
     }
 
     public function getContext(){
@@ -131,6 +135,7 @@ class Tonic{
         foreach($vars as $k => $v){
             $this->assign($k,$v);
         }
+        return $this;
     }
 
     /**
