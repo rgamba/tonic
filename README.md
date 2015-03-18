@@ -75,3 +75,48 @@ jsonEncode() | Alias of json_encode()
 replace(find,replace) | Alias of str_replace()
 default(value) | In case variable is empty, assign it value
 ifEmpty(value [,else_value]) | If variable is empty assign it value, else if else_value is set, set it to else_value
+if(value, then_value [,else_value [,comparisson_operator]] ) | Conditionally set the variable's value
+preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
+
+## Include templates
+You can include a template inside another template
+```html
+{include:footer.html}
+```
+In this case, footer.html will have access to all the variables exported to the parent template, unless specified otherwise:
+```html
+{include:footer.html,controller=footer.php}
+```
+In order to include a template but prevent the render:
+```html
+{norender:footer.html}
+```
+## Control structures
+### If / else
+Making conditionals is very easy
+```html
+{if:$user.role == "admin"}
+<h1>Hello admin</h1>
+{elseif:$user.role.upper() == "MEMBER"}
+<h1>Hello member</h1>
+{else}
+<h1>Hello guest</h1>
+{/if}
+```
+### Loops
+```html
+<ul>
+{loop:$users,item=user}
+<li>{$user.name.capitalize()}</h1>
+{/loop}
+</ul>
+```
+Or if the array key is needed
+```html
+<ul>
+{loop:$users,item=user,key=i}
+<li>{$i} - {$user.name.capitalize()}</h1>
+{/loop}
+</ul>
+```
+NOTE that the "user" not the "i" variables created inside the loop declaration have a dollar sign. The dollar sign is just used INSIDE the structure, NOT in the declaration. Also it's important that you do not put extra white spaces inside the structure declaration as it's unable to handle them and will generate an error.
