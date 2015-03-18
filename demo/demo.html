@@ -11,6 +11,7 @@
 		<td>Email: </td><td>{$user.email}</td>
 	</tr>
 </table>
+<p>Now: {$now.date("c")}</p>
 <h2>Modifiers</h2>
 <table>
 	<tr>
@@ -39,3 +40,5 @@
 	<li>User: {$user.name.capitalize()}  Email: {$user.email}  Role: {$user.role.if("admin","administrator").upper()}</li>
 {/loop}
 </ul>
+
+{include:footer.html}

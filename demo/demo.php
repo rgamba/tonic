@@ -1,5 +1,5 @@
 <?php
-require_once("Tonic.php");
+require_once("../Tonic.php");
 $tpl = new Tonic("demo.html");
 $tpl->user_role = "member";
 $tpl->user = array(
@@ -25,5 +25,9 @@ $tpl->users = array(
 		"role" => "member"
 	)
 );
+// This will be present in all the templates
+$tpl->setGlobals(array(
+	"now" => @date("Y-m-d H:i:s")
+));
 
 echo $tpl->render();
