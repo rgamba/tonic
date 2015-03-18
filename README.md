@@ -12,7 +12,7 @@ It's also very flexible. The above code can also be written like:
 $tpl = new Tonic();
 echo $tpl->load("demo.html")->assign("user_role","member")->render();
 ```
-## Show me the sintax
+## Show me the syntax
 Using Tonic
 ```html
 <body>
