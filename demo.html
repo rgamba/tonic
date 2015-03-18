@@ -1,0 +1,41 @@
+<h1>Simple variables</h1>
+<br>
+<table>
+	<tr>
+		<td>Name: </td><td>{$user.name}</td>
+	</tr>
+	<tr>
+		<td>Last name: </td><td>{$user.last_name}</td>
+	</tr>
+	<tr>
+		<td>Email: </td><td>{$user.email}</td>
+	</tr>
+</table>
+<h2>Modifiers</h2>
+<table>
+	<tr>
+		<td>Name: </td><td>{$user.name.upper()}</td>
+	</tr>
+	<tr>
+		<td>Nickname: </td><td>{$user.name.lower().if("ricardo","ricky").capitalize()}</td>
+	</tr>
+	<tr>
+		<td>Extra: </td><td>{$user.extra.truncate(20)}</td>
+	</tr>
+</table>
+<hr>
+<h1>Control structures</h1>
+<h2>If conditionals</h2>
+{if:$user_role.upper() == "ADMIN"}
+    <p>Welcome Administrator</p>
+{elseif:$user_role.upper() == "MEMBER" || $user_role.upper() == "TEAM"}
+    <p>Welcome member of the community</p>
+{else}
+    <p>You are not a registered user</p>
+{/if}
+<h2>Loops</h2>
+<ul>
+{loop:$users,item=user}
+	<li>User: {$user.name.capitalize()}  Email: {$user.email}  Role: {$user.role.if("admin","administrator").upper()}</li>
+{/loop}
+</ul>
