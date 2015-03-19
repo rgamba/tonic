@@ -266,7 +266,7 @@ class Tonic{
 
     private function handleIncludes(){
         $matches=array();
-        preg_match_all('/\{\s*include\s*:\s*(.+?)\s*}/',$this->content,$matches);
+        preg_match_all('/\{\s*include\s*(.+?)\s*}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[1] as $i => $include){
                 $include=trim($include);
@@ -284,9 +284,13 @@ class Tonic{
                 }else
                     $include=$include[0];
 
-                $inc = new Tonic($include);
-                $inc->setContext($this->assigned);
-                $rep = $inc->render();
+                if (substr($include,0,4) == "http") {
+                    $rep = file_get_contents($include);
+                } else {
+                    $inc = new Tonic($include);
+                    $inc->setContext($this->assigned);
+                    $rep = $inc->render();
+                }
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
