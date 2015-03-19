@@ -124,6 +124,7 @@ Making conditionals is very easy
 {endif}
 ```
 You can use regular logic operators (==, !=, >, <, >=, <=, ||, &&) or you can use the following
+
 Operator | Equivalent
 --- | ---
 eq | ==
@@ -132,6 +133,7 @@ gt | >
 lt | <
 gte | >=
 lte | <=
+
 ### Loops
 ```html
 <ul>
