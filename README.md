@@ -61,7 +61,7 @@ Working with timezones
 ```html
 <p>The local date is {$my_date.toLocal().date("Y-m-d h:i a")}</p>
 ```
-Which will render `$my_date` to the timezone configured in `$tonic->local_tz`
+Which will render `$my_date` to the timezone configured in `Tonic::$local_tz`
 ### Custom timezone
 ```html
 <p>The local date is {$my_date.toTz("America/Mexico_city").date("Y-m-d h:i a")}</p>

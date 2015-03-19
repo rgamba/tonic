@@ -1,9 +1,13 @@
 <?php
 error_reporting(E_ALL);
 require_once("../Tonic.php");
+Tonic::$local_tz = "America/Mexico_city";
+// This will be present in all the templates
+Tonic::setGlobals(array(
+	"now" => @date_create()
+));
 $tpl = new Tonic("demo.html");
 $tpl->user_role = "member";
-$tpl->local_tz = "America/Mexico_city";
 $tpl->user = array(
 	"name" => "Ricardo",
 	"last_name" => "Gamba",
@@ -27,9 +31,6 @@ $tpl->users = array(
 		"role" => "member"
 	)
 );
-// This will be present in all the templates
-$tpl->setGlobals(array(
-	"now" => @date_create()
-));
+
 
 echo $tpl->render();

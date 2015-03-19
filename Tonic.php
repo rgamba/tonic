@@ -27,7 +27,7 @@ class Tonic{
     /**
     * Local timezone (to use with toLocal() modifier)
     */
-    public $local_tz = 'GMT';
+    public static $local_tz = 'GMT';
     /**
      * Include path
      * @var string
@@ -417,7 +417,7 @@ class Tonic{
                 case 'toLocalTime':
                 case 'toLocalDate':
                 case 'toLocal':
-                    $ov='date_timezone_set('.$ov.', timezone_open("'.$this->local_tz.'"))';
+                    $ov='date_timezone_set('.$ov.', timezone_open("'.self::$local_tz.'"))';
                     break;
                 case 'toTz':
                     $ov='date_timezone_set('.$ov.', timezone_open("'.$params[0].'"))';
