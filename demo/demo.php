@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL);
 require_once("../Tonic.php");
 $tpl = new Tonic("demo.html");
 $tpl->user_role = "member";

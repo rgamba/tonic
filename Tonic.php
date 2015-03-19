@@ -1,10 +1,10 @@
 <?php
 /**
 * Tonic Template Engine
-* 
+*
 * All the templates are rendered by this
 * template engine. Including Layout.php
-* 
+*
 */
 class Tonic{
     /**
@@ -30,7 +30,7 @@ class Tonic{
     public $default_extension='.html';
     /**
      * Default controller root to use
-     * @var <type> 
+     * @var <type>
      */
     public static $default_controller_root;
     /**
@@ -65,7 +65,6 @@ class Tonic{
         if(!is_array($g))
             return false;
         self::$globals=$g;
-        return $this;
     }
 
     /**
@@ -87,10 +86,10 @@ class Tonic{
         }
         return $this;
     }
-    
+
     /**
     * Load from string instead of file
-    * 
+    *
     * @param mixed $str
     */
     public function loadFromString($str){
@@ -147,15 +146,13 @@ class Tonic{
             if(file_exists($this->cache_dir.md5("template=".Tpl::get('ACTIVE')."&file=".$this->file)))
                 unlink($this->cache_dir.md5("template=".Tpl::get('ACTIVE')."&file=".$this->file));
         if(!$this->is_php){
-            if(!$this->getFromCache()){ 
+            if(!$this->getFromCache()){
                 $this->assignGlobals();
-                $this->handleSecureAnchors();
-                $this->handleSecureAnchors('secure');
                 $this->handleIncludes();
                 $this->handleLoops();
                 $this->handleIfs();
                 $this->handleVars();
-                $this->handleSwitchs();   
+                $this->handleSwitchs();
                 $this->compile();
                 // Includes after compile
                 $this->handleNoRender();
@@ -165,7 +162,7 @@ class Tonic{
         }
         return $this->output;
     }
-    
+
     private function getFromCache(){
         if($this->enable_content_cache!=true || !file_exists($this->cache_dir.md5("template=".$this->file)))
             return false;
@@ -176,15 +173,15 @@ class Tonic{
         }
         $this->assignGlobals();
         foreach($this->assigned as $var => $val)
-            ${$var}=$val;  
+            ${$var}=$val;
         ob_start();
         include_once($this->cache_dir.md5("template=".$this->file));
         $this->output=ob_get_clean();
         return true;
     }
-    
+
     private function renderPhp(){
-        $this->assignGlobals(); 
+        $this->assignGlobals();
         if(!file_exists($this->file))
             die("TemplateEngine::renderPhp() - File not found (".$this->file.")");
         ob_start();
@@ -192,7 +189,7 @@ class Tonic{
         $this->output=ob_get_clean();
         return true;
     }
-    
+
     private function assignGlobals(){
         self::$globals['system']['session'] = @$_SESSION;
         $this->setContext(self::$globals);
@@ -212,69 +209,55 @@ class Tonic{
             die("Error: ".$this->output." <hr />".$this->content);
         }
     }
-    
+
     private function saveCache(){
         $file_name=md5("templat=".$this->file);
         $cache=fopen($this->cache_dir.$file_name,'w');
         fwrite($cache,$this->content);
         fclose($cache);
     }
-    
-    private function handleSecureAnchors($tag="a"){
-        $matches=array();
-        preg_match_all('/\{'.$tag.':(.+?)\}(.+?)\{\/'.$tag.'\}/s',$this->content,$matches);
-        if(!empty($matches)){
-            foreach($matches[1] as $i => $url){
-                $or_url=$url;
-                $url=explode(' ',$url,2);
-                $url_suffix=@$url[1];
-                $url=@$url[0];
-                $var_match=array();
-                preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.\",]+)/',$url,$var_match);
-                if(!empty($var_match)){
-                    foreach($var_match[1] as $j => $var){
-                        $var_name=explode('.',$var);
-                        if(count($var_name)>1){
-                            $vn=$var_name[0];
-                            unset($var_name[0]);
-                            $mod=array();
-                            foreach($var_name as $k => $index){
-                                if(substr($index,-1,1)==")"){
-                                    $mod[]=$index;
-                                }else{
-                                    $vn.="['$index']";
-                                }
-                            }
-                            $var_name='$'.$vn;
-                            $this->applyModifiers($var_name,$mod);
-                        }else{
-                            $var_name='$'.$var_name[0];
-                        }
-                        
-                        $url=str_replace(@$var_match[0][$j],'".'.$var_name.'."',$url);
-                    }
-                }
 
-                $rep='<?php if(has_access_to_location("'.$url.'")): ?>';
-                if($tag=='a')
-                    $rep.='<a href="<?php echo url("'.$url.'"); ?>" '.$url_suffix.'>';
-                $rep.=$matches[2][$i];
-                if($tag=='a')
-                    $rep.='</a>';
-                $rep.='<?php endif; ?>';
-                $this->content=str_replace($matches[0][$i],$rep,$this->content);
+    private function removeWhiteSpaces($str) {
+        $in = false;
+        $escaped = false;
+        $ws_string = "";
+        for($i = 0; $i <= strlen($str)-1; $i++) {
+            $char = substr($str,$i,1);
+            $je = false;
+            $continue = false;
+            switch($char) {
+                case '\\':
+                    $je = true;
+                    $escaped = true;
+                    break;
+                case '"':
+                    if(!$escaped) {
+                        $in = !$in;
+                    }
+                    break;
+                case " ":
+                    if(!$in) {
+                        $continue = true;
+                    }
+                    break;
             }
-        }    
+            if (!$je) {
+                $escaped = false;
+            }
+            if(!$continue) {
+                $ws_string .= $char;
+            }
+        }
+        return $ws_string;
     }
 
     private function handleIncludes(){
         $matches=array();
-        preg_match_all('/\{\include:(.+?)\}/',$this->content,$matches);
+        preg_match_all('/\{\s*include\s*:\s*(.+?)\s*}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[1] as $i => $include){
                 $include=trim($include);
-                //if(strpos($include,'.')===false)
-                //    $include=$include.$this->default_extension;
+
                 $include=explode(',',$include);
                 $params=array();
                 if(count($include)>1){
@@ -287,22 +270,10 @@ class Tonic{
                     $include=$inc;
                 }else
                     $include=$include[0];
-                
-                if(isset($params['find_controller'])){
-                    $rep=self::loadExternalTemplate($include,$this->root,$this->controller_root,NULL,$params);
-                }elseif(!empty($params['controller'])){
-                    $rep=self::loadExternalTemplate($include,$this->root,$this->controller_root,$params['controller'],$params);
-                }elseif(isset($params['external_url'])){
-                    $file=@file_get_contents($include);
-                    $rep=($file ? $file : '[unable to reach url: '.$include.']'); 
-                }elseif(isset($params['content'])){
-                    $content=url('contenido/view').$include;
-                    $file=@file_get_contents($content);
-                    $rep=($file ? $file : '[unable to find content: '.$content.']');  
-                }else{
-                    $file=@file_get_contents($this->root.$include);
-                    $rep=($file ? $file : '[include not found: '.$this->root.$include.']');
-                }
+
+                $inc = new Tonic($include);
+                $inc->setContext($this->assigned);
+                $rep = $inc->render();
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
@@ -621,11 +592,11 @@ class Tonic{
             }
         }
     }
-    
+
     private function findVarInString(&$string){
         $var_match=array();
         preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.\",>]+)/',$string,$var_match);
-        
+
         if(!empty($var_match[0])){
             foreach($var_match[1] as $j => $var){
                 $_var_name=explode('.',$string);
@@ -704,7 +675,7 @@ class Tonic{
 
     private function handleIfs(){
         $matches=array();
-        preg_match_all('/\{(if|elseif):(.+?)\}/',$this->content,$matches);
+        preg_match_all('/\{\s*(if|elseif)\s*(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[2] as $i => $condition){
                 $condition=trim($condition);
@@ -754,19 +725,20 @@ class Tonic{
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
-        $this->content=str_replace('{/if}','<?php endif; ?>',$this->content);
-        $this->content=str_replace('{else}','<?php else: ?>',$this->content);
+        $this->content=preg_replace('/\{\s*(\/if|endif)\s*\}/','<?php endif; ?>',$this->content);
+        $this->content=preg_replace('/\{\s*else\s*\}/','<?php else: ?>',$this->content);
 
     }
 
     private function handleLoops(){
         $matches=array();
-        preg_match_all('/\{loop:(.+?)\}/',$this->content,$matches);
+        preg_match_all('/\{\s*(loop|for)\s*(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
-            foreach($matches[1] as $i => $loop){
-                $loop_det=explode(',',$loop);
-                $loop_name=$loop_det[0];
-                unset($loop_det[0]);
+            foreach($matches[2] as $i => $loop){
+                $loop = $this->removeWhiteSpaces($loop);
+                $loop_det=explode('in',$loop);
+                $loop_name=$loop_det[1];
+                unset($loop_det[1]);
                 $loop_name=explode('.',$loop_name);
                 if(count($loop_name)>1){
                     $ln=$loop_name[0];
@@ -779,8 +751,17 @@ class Tonic{
                 }
                 $key=NULL;
                 $val=NULL;
+
+                $loop_vars = explode(",",$loop_det[0]);
+                if (count($loop_vars) > 1) {
+                    $key = $loop_vars[0];
+                    $val = $loop_vars[1];
+                } else {
+                    $val = $loop_vars[0];
+                }
+
                 foreach($loop_det as $j => $_val){
-                    list($k,$v)=explode('=',$_val);
+                    list($k,$v)=explode(',',$_val);
                     if($k=="key"){
                         $key=$v;
                         continue;
@@ -790,13 +771,13 @@ class Tonic{
                         continue;
                     }
                 }
-                $rep='<?php foreach('.$loop_name.' as '.(!empty($key) ? '$'.$key.' => $'.$val : ' $'.$val).'): ?>';
+                $rep='<?php foreach('.$loop_name.' as '.(!empty($key) ? $key.' => '.$val : ' '.$val).'): ?>';
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
-        $this->content=str_replace('{/loop}','<?php endforeach; ?>',$this->content);
+        $this->content=preg_replace('/\{\s*(\/loop|endloop|\/for|endfor)\s*\}/','<?php endforeach; ?>',$this->content);
     }
-    
+
     # Static helper functions
     /**
      * Utility date format function used in the class
@@ -844,13 +825,13 @@ class Tonic{
         if(file_exists($tpl->controller_root.$phpfile)){
             require_once($tpl->controller_root.$phpfile);
         }
-        
+
         if(!empty($params)){
             foreach($params as $k => $v){
                 $tpl->assign($k,true);
             }
         }
-        
+
         $tpl->setContext(get_defined_vars());
         return $tpl->render();
     }
@@ -876,4 +857,3 @@ class Tonic{
     }
 
 }
-
