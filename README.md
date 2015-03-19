@@ -2,6 +2,7 @@
 Fast and powerful PHP templating engine that compiles down to native PHP code.
 ## Changelog
 * 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
+
 ## Usage
 Using Tonic is pretty straight forward.
 ```php
