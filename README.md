@@ -49,8 +49,8 @@ We can also use modifiers in the same way when using associative arrays:
 ## Working with dates
 It's easy to handle and format dates inside a Tonic template.
 ```php
+Tonic::$local_tz = 'America/New_york'; // Optionaly set the user's local tz
 $tpl = new Tonic();
-$tpl->local_tz = 'America/New_york'; // Optionaly set the user's local tz
 $tpl->my_date = date_create();
 ```
 And the template
