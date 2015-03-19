@@ -1,10 +1,10 @@
 <?php
 /**
-* Tonic Template Engine
+* tonic v2.0
 *
-* All the templates are rendered by this
-* template engine. Including Layout.php
+* Lightweight PHP templating engine
 *
+* @author Ricardo Gamba <rgamba@gmail.com>
 */
 class Tonic{
     /**
@@ -12,6 +12,22 @@ class Tonic{
     * htmlspecialchars()
     */
     const ESCAPE_TAGS_IN_VARS = false;
+    /**
+    * Enable template caching
+    */
+    public $enable_content_cache = false;
+    /**
+    * Caching directory (must have write permissions)
+    */
+    public $cache_dir = "cache/";
+    /**
+    * Cache files lifetime
+    */
+    public $cache_lifetime = 86400;
+    /**
+    * Local timezone (to use with toLocal() modifier)
+    */
+    public $local_tz = 'GMT';
     /**
      * Include path
      * @var string
@@ -46,10 +62,6 @@ class Tonic{
     private $source;
     private $content;
     private $is_php = false;
-    public $enable_content_cache = false;
-    public $cache_dir = "cache/";
-    public $cache_lifetime = 86400;
-    public $local_tz = 'GMT';
 
     /**
      * Object constructor
@@ -793,62 +805,6 @@ class Tonic{
     }
 
     # Static helper functions
-    /**
-     * Utility date format function used in the class
-     * @param <type> $date
-     * @param <type> $format
-     * @return <type>
-     */
-    public static function dateFormatCustom($date,$format){
-        if(empty($date))
-            return "";
-        $rep_val=$date;
-        $datetime=explode(' ',$rep_val);
-        $date=@explode('-',$datetime[0]);
-        $time=@explode(':',$datetime[1]);
-        $timestamp=@mktime(intval($time[0]),intval($time[1]),intval($time[2]),intval($date[1]),intval($date[2]),intval($date[0]));
-        if(empty($timestamp) || $timestamp<0 || ($date[0]=='0000' && $date[1]=='00' && $date[2]=='00')){
-            $rep_val='';
-        }else{
-            $rep_val=date($format,$timestamp);
-        }
-        return $rep_val;
-    }
-    /**
-     * Utility function to load external templates with
-     * independant controllers
-     * @param <type> $file
-     * @param <type> $def_root
-     * @param <type> $def_controller
-     * @return <type>
-     */
-    public static function loadExternalTemplate($file,$def_root=NULL,$def_controller=NULL,$controller=NULL,$params=NULL){
-        $_file=explode('.',$file);
-        $ext=$_file[count($_file)-1];
-        $tpl=new Tonic();
-        if(!empty($def_controller))
-            $tpl->controller_root=$def_controller;
-        if(!empty($def_root))
-            $tpl->root=$def_root;
-        $tpl->load($def_root.$file);
-        if($controller==NULL){
-            $phpfile=substr($file,0,(strlen($ext)*(-1)))."php";
-        }else{
-            $phpfile=$controller;
-        }
-        if(file_exists($tpl->controller_root.$phpfile)){
-            require_once($tpl->controller_root.$phpfile);
-        }
-
-        if(!empty($params)){
-            foreach($params as $k => $v){
-                $tpl->assign($k,true);
-            }
-        }
-
-        $tpl->setContext(get_defined_vars());
-        return $tpl->render();
-    }
 
     public static function removeSpecialChars($text){
         $find = array('á','é','í','ó','ú','Á','É','Í','Ó','Ú','ñ','Ñ',' ','"',"'");
@@ -869,5 +825,4 @@ class Tonic{
             return $text;
         }
     }
-
 }

@@ -1,5 +1,7 @@
 # tonic
 Fast and powerful PHP templating engine that compiles down to native PHP code.
+## Changelog
+* 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
 ## Usage
 Using Tonic is pretty straight forward.
 ```php
@@ -52,7 +54,16 @@ $tpl->my_date = date_create();
 ```
 And the template
 ```html
-<p>Today is {$my_date.date("Y-m-d h:i a")}
+<p>Today is {$my_date.date("Y-m-d h:i a")}</p>
+```
+Working with timezones
+```html
+<p>The local date is {$my_date.toLocal().date("Y-m-d h:i a")}</p>
+```
+Which will render `$my_date` to the timezone configured in `$tonic->local_tz`
+### Custom timezone
+```html
+<p>The local date is {$my_date.toTz("America/Mexico_city").date("Y-m-d h:i a")}</p>
 ```
 ### List of modifiers
 
