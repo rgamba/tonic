@@ -49,6 +49,7 @@ class Tonic{
     public $enable_content_cache = false;
     public $cache_dir = "cache/";
     public $cache_lifetime = 86400;
+    public $local_tz = 'GMT';
 
     /**
      * Object constructor
@@ -400,13 +401,16 @@ class Tonic{
                 case 'toLocalTime':
                 case 'toLocalDate':
                 case 'toLocal':
-                    $ov='date_to_local('.$ov.')';
+                    $ov='date_timezone_set('.$ov.', timezone_open("'.$this->local_tz.'"))';
+                    break;
+                case 'toTz':
+                    $ov='date_timezone_set('.$ov.', timezone_open("'.$params[0].'"))';
                     break;
                 case 'toGMT':
-                    $ov='date_to_gmt('.$ov.')';
+                    $ov='date_timezone_set('.$ov.', timezone_open("GMT"))';
                     break;
                 case 'date':
-                    $ov='self::dateFormatCustom('.$ov.',"'.$params[0].'")';
+                    $ov='date_format('.$ov.',"'.$params[0].'")';
                     break;
                 case 'nl2br':
                     $ov='nl2br('.$ov.')';
@@ -507,25 +511,28 @@ class Tonic{
                         case '':
                         case '==':
                         case '=':
-                        case 'equals':
+                        case 'eq':
                         default:
                             $operator="==";
                             break;
                         case '<':
-                        case 'smaller':
+                        case 'lt':
                             $operator="<";
                             break;
                         case '>':
-                        case 'greater':
+                        case 'gt':
                             $operator=">";
                             break;
                         case '<=':
-                        case 'smaller or equal':
+                        case 'lte':
                             $operator="<=";
                             break;
                         case '>=':
-                        case 'greater or equal':
+                        case 'gte':
                             $operator=">=";
+                            break;
+                        case 'neq':
+                            $operator = "!=";
                             break;
                     }
                     $ov='('.$ov.' '.$operator.' "'.$params[0].'" ? "'.$params[1].'" : '.(!isset($params[2]) ? $ov : '"'.$params[2].'"').')';
@@ -552,7 +559,7 @@ class Tonic{
 
     private function handleVars(){
         $matches=array();
-        preg_match_all('/\{\$(.+?)\}/',$this->content,$matches);
+        preg_match_all('/\{\s*\$(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[1] as $i => $var_name){
                 $prev_tag=strpos($var_name,'preventTag') === false ? false : true;
@@ -630,7 +637,7 @@ class Tonic{
 
     private function handleSwitchs(){
         $matches=array();
-        preg_match_all('/\{(switch|case):(.+?)\}/',$this->content,$matches);
+        preg_match_all('/\{\s*(switch|case)\s*(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[2] as $i => $condition){
                 $var_match=array();
@@ -668,9 +675,9 @@ class Tonic{
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
-        $this->content=str_replace('{/switch}','<?php } ?>',$this->content);
-        $this->content=str_replace('{default}','<?php default: ?>',$this->content);
-        $this->content=str_replace('{/case}','<?php break; ?>',$this->content);
+        $this->content=preg_replace('/\{\s*(\/switch|endswitch)\s*\}/','<?php } ?>',$this->content);
+        $this->content=preg_replace('/\{\s*default\s*\}/','<?php default: ?>',$this->content);
+        $this->content=preg_replace('/\{\s*(\/case|endcase)\s*\}/','<?php break; ?>',$this->content);
     }
 
     private function handleIfs(){
@@ -680,15 +687,22 @@ class Tonic{
             foreach($matches[2] as $i => $condition){
                 $condition=trim($condition);
                 $condition=str_replace(array(
-                    'equals',
-                    'greater than',
-                    'smaller than',
-                    'is different than'
+                    'eq',
+                    'gt',
+                    'lt',
+                    'neq',
+                    'or',
+                    'gte',
+                    'lte'
                 ),array(
                     '==',
                     '>',
                     '<',
-                    '!='
+                    '!=',
+                    '||',
+                    '>=',
+                    '<='
+
                 ),$condition);
                 $var_match=array();
                 preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.]+)/',$condition,$var_match);

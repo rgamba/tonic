@@ -1,7 +1,7 @@
 # tonic
 Fast and powerful PHP templating engine that compiles down to native PHP code.
 ## Usage
-Using Tonic is pretty straight forward. 
+Using Tonic is pretty straight forward.
 ```php
 $tpl = new Tonic("demo.html");
 $tpl->user_role = "member";
@@ -16,15 +16,15 @@ echo $tpl->load("demo.html")->assign("user_role","member")->render();
 Using Tonic
 ```html
 <body>
-<h1>Bienvenido {$user.name.capitalize().truncate(50)}</h1>
-Rol de usuario: {$role.lower().if("admin","administrator").capitalize()}
+<h1>Welcome {$user.name.capitalize().truncate(50)}</h1>
+User role: {$role.lower().if("admin","administrator").capitalize()}
 </body>
 ```
 vs. writting all in PHP
 ```html
 <body>
-<h1>Bienvenido <?php echo (strlen($user["name"]) > 50 ? substr(ucwords($user["name"]),0,50)."..." : ucwords($user["name"])) ?></h1>
-Rol de usuario: <?php if(strtolower($role) == "admin") { echo "Administrator" } else { echo ucwords($role) } ?>
+<h1>Welcome <?php echo (strlen($user["name"]) > 50 ? substr(ucwords($user["name"]),0,50)."..." : ucwords($user["name"])) ?></h1>
+User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else { echo ucwords($role) } ?>
 </body>
 ```
 ## Caching
@@ -42,6 +42,17 @@ Modifiers are functions that modify the output variable in various ways. All mod
 We can also use modifiers in the same way when using associative arrays:
 ```html
 {$my_array.item.sub_item.modifier1().modifier2().modifier3()}
+```
+## Working with dates
+It's easy to handle and format dates inside a Tonic template.
+```php
+$tpl = new Tonic();
+$tpl->local_tz = 'America/New_york'; // Optionaly set the user's local tz
+$tpl->my_date = date_create();
+```
+And the template
+```html
+<p>Today is {$my_date.date("Y-m-d h:i a")}
 ```
 ### List of modifiers
 
@@ -81,42 +92,47 @@ preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's
 ## Include templates
 You can include a template inside another template
 ```html
-{include:footer.html}
+{include footer.html}
 ```
-In this case, footer.html will have access to all the variables exported to the parent template, unless specified otherwise:
+We can also fetch and external page and load it into our current template
 ```html
-{include:footer.html,controller=footer.php}
+{include http://mypage.com/static.html}
 ```
-In order to include a template but prevent the render:
-```html
-{norender:footer.html}
-```
+Templates includes support nested calls, but beware that infinite loop can happen in including a template "A" inside "A" template.
 ## Control structures
 ### If / else
 Making conditionals is very easy
 ```html
-{if:$user.role == "admin"}
+{if $user.role eq "admin"}
 <h1>Hello admin</h1>
-{elseif:$user.role.upper() == "MEMBER"}
+{elseif $user.role.upper() eq "MEMBER" or $user.role.upper() == "CLIENT"}
 <h1>Hello member</h1>
 {else}
 <h1>Hello guest</h1>
-{/if}
+{endif}
 ```
+You can use regular logic operators (==, !=, >, <, >=, <=, ||, &&) or you can use the following
+Operator | Equivalent
+--- | ---
+eq | ==
+neq | !=
+gt | >
+lt | <
+gte | >=
+lte | <=
 ### Loops
 ```html
 <ul>
-{loop:$users,item=user}
+{loop $user in $users}
 <li>{$user.name.capitalize()}</h1>
-{/loop}
+{endloop}
 </ul>
 ```
 Or if the array key is needed
 ```html
 <ul>
-{loop:$users,item=user,key=i}
+{loop $i,$user in $users}
 <li>{$i} - {$user.name.capitalize()}</h1>
-{/loop}
+{endloop}
 </ul>
 ```
-NOTE that the "user" not the "i" variables created inside the loop declaration have a dollar sign. The dollar sign is just used INSIDE the structure, NOT in the declaration. Also it's important that you do not put extra white spaces inside the structure declaration as it's unable to handle them and will generate an error.

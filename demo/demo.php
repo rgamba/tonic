@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 require_once("../Tonic.php");
 $tpl = new Tonic("demo.html");
 $tpl->user_role = "member";
+$tpl->local_tz = "America/Mexico_city";
 $tpl->user = array(
 	"name" => "Ricardo",
 	"last_name" => "Gamba",
@@ -28,7 +29,7 @@ $tpl->users = array(
 );
 // This will be present in all the templates
 $tpl->setGlobals(array(
-	"now" => @date("Y-m-d H:i:s")
+	"now" => @date_create()
 ));
 
 echo $tpl->render();
