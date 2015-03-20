@@ -5,13 +5,14 @@
 * Lightweight PHP templating engine
 *
 * @author Ricardo Gamba <rgamba@gmail.com>
+* @license BSD 3-Clause License
 */
 class Tonic{
     /**
     * If set to true, will try to encode all output tags with
     * htmlspecialchars()
     */
-    const ESCAPE_TAGS_IN_VARS = false;
+    public $escape_tags_in_vars = false;
     /**
     * Enable template caching
     */
@@ -29,30 +30,30 @@ class Tonic{
     */
     public static $local_tz = 'GMT';
     /**
-     * Include path
-     * @var string
-     */
+    * Include path
+    * @var string
+    */
     public $root='./';
     /**
-     * Default path to search for includes
-     * that require external controller
-     * @var string
-     */
+    * Default path to search for includes
+    * that require external controller
+    * @var string
+    */
     public $controller_root='./';
     /**
-     * Default extension for includes
-     * @var string
-     */
+    * Default extension for includes
+    * @var string
+    */
     public $default_extension='.html';
     /**
-     * Default controller root to use
-     * @var <type>
-     */
+    * Default controller root to use
+    * @var <type>
+    */
     public static $default_controller_root;
     /**
-     * Default include path
-     * @var <type>
-     */
+    * Default include path
+    * @var <type>
+    */
     public static $default_root;
 
     private static $globals=array();
@@ -65,9 +66,9 @@ class Tonic{
     private static $modifiers = null;
 
     /**
-     * Object constructor
-     * @param $file template file to load
-     */
+    * Object constructor
+    * @param $file template file to load
+    */
     public function __construct($file=NULL){
         self::initModifiers();
         if(!empty($file)){
@@ -76,163 +77,11 @@ class Tonic{
         }
     }
 
-    private static function initModifiers(){
-        if(self::$modifiers != null)
-            return;
-        self::extendModifier("upper", function($input) {
-            return strtoupper($input);
-        });
-        self::extendModifier("lower", function($input) {
-            return strtolower($input);
-        });
-        self::extendModifier("capitalize", function($input) {
-            return ucwords($input);
-        });
-        self::extendModifier("abs", function($input) {
-            return abs($input);
-        });
-        self::extendModifier("isEmpty", function($input) {
-            return empty($input);
-        });
-        self::extendModifier("truncate", function($input,$len) {
-            return substr($input,0,$len).(strlen($input) > $len ? "..." : "");
-        });
-        self::extendModifier("count", function($input) {
-            return count($input);
-        });
-        self::extendModifier("length", function($input) {
-            return count($input);
-        });
-        self::extendModifier("toLocal", function($input) {
-            return date_timezone_set($input, timezone_open(self::$local_tz));
-        });
-        self::extendModifier("toTz", function($input,$tz) {
-            return date_timezone_set($input, timezone_open($tz));
-        });
-        self::extendModifier("toGMT", function($input,$tz) {
-            return date_timezone_set($input, timezone_open("GMT"));
-        });
-        self::extendModifier("date", function($input,$format) {
-            return date_format($input,$format);
-        });
-        self::extendModifier("nl2br", function($input) {
-            return nl2br($input);
-        });
-        self::extendModifier("stripSlashes", function($input) {
-            return stripslashes($input);
-        });
-        self::extendModifier("sum", function($input,$val) {
-            return $input + (float)$val;
-        });
-        self::extendModifier("substract", function($input,$val) {
-            return $input - (float)$val;
-        });
-        self::extendModifier("multiply", function($input,$val) {
-            return $input * (float)$val;
-        });
-        self::extendModifier("divide", function($input,$val) {
-            return $input / (float)$val;
-        });
-        self::extendModifier("mod", function($input,$val) {
-            return $input % (float)$val;
-        });
-        self::extendModifier("encodeTags", function($input) {
-            return htmlspecialchars($input,ENT_NOQUOTES);
-        });
-        self::extendModifier("decodeTags", function($input) {
-            return htmlspecialchars_decode($input);
-        });
-        self::extendModifier("stripTags", function($input) {
-            return strip_tags($input);
-        });
-        self::extendModifier("urlDecode", function($input) {
-            return urldecode($input);
-        });
-        self::extendModifier("urlFriendly", function($input) {
-            return urlencode(self::removeSpecialChars(strtolower($input)));
-        });
-        self::extendModifier("trim", function($input) {
-            return trim($input);
-        });
-        self::extendModifier("sha1", function($input) {
-            return sha1($input);
-        });
-        self::extendModifier("numberFormat", function($input,$precision = 2) {
-            return number_format($input,(int)$precision);
-        });
-        self::extendModifier("lastIndex", function($input) {
-            return current(array_reverse(array_keys($input)));
-        });
-        self::extendModifier("lastValue", function($input) {
-            return current(array_reverse($item));
-        });
-        self::extendModifier("jsonEncode", function($input) {
-            return json_encode($input);
-        });
-        self::extendModifier("substr", function($input,$a,$b = 0) {
-            return substr($input,$a,$b);
-        });
-        self::extendModifier("join", function($input,$glue) {
-            return implode($glue,$input);
-        });
-        self::extendModifier("explode", function($input,$del) {
-            return explode($del,$input);
-        });
-        self::extendModifier("replace", function($input,$search,$replace) {
-            return str_replace($search,$replace,$input);
-        });
-        self::extendModifier("default", function($input,$default) {
-            return (empty($input) ? $default : $input);
-        });
-        self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
-            $ret = $input;
-            if(empty($ret)) {
-                $ret = $true_val;
-            } else if($false_val) {
-                $ret = $false_val;
-            }
-            return $ret;
-        });
-        self::extendModifier("if", function($input,$condition,$true_val, $false_val = null, $operator = "eq") {
-            switch($operator){
-                case '':
-                case '==':
-                case '=':
-                case 'eq':
-                default:
-                    $operator="==";
-                    break;
-                case '<':
-                case 'lt':
-                    $operator="<";
-                    break;
-                case '>':
-                case 'gt':
-                    $operator=">";
-                    break;
-                case '<=':
-                case 'lte':
-                    $operator="<=";
-                    break;
-                case '>=':
-                case 'gte':
-                    $operator=">=";
-                    break;
-                case 'neq':
-                    $operator = "!=";
-                    break;
-            }
-            $ret = $input;
-            if(eval('return ('.$condition.$operator.$input.');')) {
-                $ret = $true_val;
-            } else if($false_val) {
-                $ret = $false_val;
-            }
-            return $ret;
-        });
-
-    }
-
+    /**
+    * Create a new custom modifier
+    * @param Name of the modifier
+    * @param Lambda function, modifier function
+    */
     public static function extendModifier($name, $func){
         if(!is_callable($func))
             return false;
@@ -240,6 +89,10 @@ class Tonic{
         return true;
     }
 
+    /**
+    * Set the global environment variables for all templates
+    * @param associative array with the global variables
+    */
     public static function setGlobals($g=array()){
         if(!is_array($g))
             return false;
@@ -247,10 +100,10 @@ class Tonic{
     }
 
     /**
-     * Load the desired template
-     * @param <type> $file
-     * @return <type>
-     */
+    * Load the desired template
+    * @param <type> $file
+    * @return <type>
+    */
     public function load($file=NULL){
         if($file!=NULL)
             $this->file=$file;
@@ -278,10 +131,10 @@ class Tonic{
     }
 
     /**
-     * Assign value to a variable inside the template
-     * @param <type> $var
-     * @param <type> $val
-     */
+    * Assign value to a variable inside the template
+    * @param <type> $var
+    * @param <type> $val
+    */
     public function assign($var,$val){
         $this->assigned[$var]=$val;
         return $this;
@@ -292,21 +145,21 @@ class Tonic{
     }
 
     /**
-     * Magic method alias for self::assign
-     * @param <type> $k
-     * @param <type> $v
-     */
+    * Magic method alias for self::assign
+    * @param <type> $k
+    * @param <type> $v
+    */
     public function __set($k,$v){
         $this->assign($k,$v);
     }
 
     /**
-     * Assign multiple variables at once
-     * This method should always receive get_defined_vars()
-     * as the first argument
-     * @param <type> get_defined_vars()
-     * @return <type>
-     */
+    * Assign multiple variables at once
+    * This method should always receive get_defined_vars()
+    * as the first argument
+    * @param <type> get_defined_vars()
+    * @return <type>
+    */
     public function setContext($vars){
         if(!is_array($vars))
             return false;
@@ -317,9 +170,9 @@ class Tonic{
     }
 
     /**
-     * Return compiled template
-     * @return <type>
-     */
+    * Return compiled template
+    * @return <type>
+    */
     public function render($replace_cache=false){
         if($replace_cache)
             if(file_exists($this->cache_dir.md5("template=".Tpl::get('ACTIVE')."&file=".$this->file)))
@@ -462,48 +315,6 @@ class Tonic{
         }
     }
 
-    private function handleNoRender(){
-        $matches=array();
-        preg_match_all('/\{norender:(.+?)\}/',$this->output,$matches);
-        if(!empty($matches)){
-            foreach($matches[1] as $i => $include){
-                $include=trim($include);
-                //if(strpos($include,'.')===false)
-                //    $include=$include.$this->default_extension;
-                $include=explode(',',$include);
-                $params=array();
-                if(count($include)>1){
-                    $inc=$include[0];
-                    unset($include[0]);
-                    foreach($include as $kv){
-                        @list($key,$val)=@explode('=',$kv);
-                        $params[$key]=empty($val) ? true : $val;
-                    }
-                    $include=$inc;
-                }else
-                    $include=$include[0];
-
-                if(isset($params['find_controller'])){
-                    $rep=self::loadExternalTemplate($include,$this->root,$this->controller_root,NULL,$params);
-                }elseif(!empty($params['controller'])){
-                    $rep=self::loadExternalTemplate($include,$this->root,$this->controller_root,$params['controller'],$params);
-                }elseif(isset($params['external_url'])){
-                    $file=@file_get_contents($include);
-                    $rep=($file ? $file : '[unable to reach url: '.$include.']');
-                }elseif(isset($params['content'])){
-                    $content=url('contenido/view').$include;
-                    $file=@file_get_contents($content);
-                    $rep=($file ? $file : '[unable to find content: '.$content.']');
-                }else{
-                    $file=@file_get_contents($this->root.$include);
-                    $rep=($file ? $file : '[include not found: '.$this->root.$include.']');
-                }
-                $this->output=str_replace($matches[0][$i],$rep,$this->output);
-            }
-        }
-    }
-
-
     private function getParams($params){
         $i=0;
         $p=array();
@@ -592,12 +403,12 @@ class Tonic{
                         }
                     }
                     $var_name='$'.$vn;
-                    if(self::ESCAPE_TAGS_IN_VARS == true && !$prev_tag)
+                    if(self::$escape_tags_in_vars == true && !$prev_tag)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                     $mod=$this->applyModifiers($var_name,$mod);
                 }else{
                     $var_name='$'.$var_name[0];
-                    if(self::ESCAPE_TAGS_IN_VARS == true)
+                    if(self::$escape_tags_in_vars == true)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                 }
                 $rep='<?php echo @'.$var_name.'; ?>';
@@ -801,8 +612,6 @@ class Tonic{
         $this->content=preg_replace('/\{\s*(\/loop|endloop|\/for|endfor)\s*\}/','<?php endforeach; ?>',$this->content);
     }
 
-    # Static helper functions
-
     public static function removeSpecialChars($text){
         $find = array('á','é','í','ó','ú','Á','É','Í','Ó','Ú','ñ','Ñ',' ','"',"'");
         $rep  = array('a','e','i','o','u','A','E','I','O','U','n','N','-',"","");
@@ -821,5 +630,165 @@ class Tonic{
         }else{
             return $text;
         }
+    }
+
+    private static function initModifiers(){
+        if(self::$modifiers != null)
+            return;
+        self::extendModifier("upper", function($input) {
+            return strtoupper($input);
+        });
+        self::extendModifier("lower", function($input) {
+            return strtolower($input);
+        });
+        self::extendModifier("capitalize", function($input) {
+            return ucwords($input);
+        });
+        self::extendModifier("abs", function($input) {
+            return abs($input);
+        });
+        self::extendModifier("isEmpty", function($input) {
+            return empty($input);
+        });
+        self::extendModifier("truncate", function($input,$len) {
+            return substr($input,0,$len).(strlen($input) > $len ? "..." : "");
+        });
+        self::extendModifier("count", function($input) {
+            return count($input);
+        });
+        self::extendModifier("length", function($input) {
+            return count($input);
+        });
+        self::extendModifier("toLocal", function($input) {
+            return date_timezone_set($input, timezone_open(self::$local_tz));
+        });
+        self::extendModifier("toTz", function($input,$tz) {
+            return date_timezone_set($input, timezone_open($tz));
+        });
+        self::extendModifier("toGMT", function($input,$tz) {
+            return date_timezone_set($input, timezone_open("GMT"));
+        });
+        self::extendModifier("date", function($input,$format) {
+            return date_format($input,$format);
+        });
+        self::extendModifier("nl2br", function($input) {
+            return nl2br($input);
+        });
+        self::extendModifier("stripSlashes", function($input) {
+            return stripslashes($input);
+        });
+        self::extendModifier("sum", function($input,$val) {
+            return $input + (float)$val;
+        });
+        self::extendModifier("substract", function($input,$val) {
+            return $input - (float)$val;
+        });
+        self::extendModifier("multiply", function($input,$val) {
+            return $input * (float)$val;
+        });
+        self::extendModifier("divide", function($input,$val) {
+            return $input / (float)$val;
+        });
+        self::extendModifier("mod", function($input,$val) {
+            return $input % (float)$val;
+        });
+        self::extendModifier("encodeTags", function($input) {
+            return htmlspecialchars($input,ENT_NOQUOTES);
+        });
+        self::extendModifier("decodeTags", function($input) {
+            return htmlspecialchars_decode($input);
+        });
+        self::extendModifier("stripTags", function($input) {
+            return strip_tags($input);
+        });
+        self::extendModifier("urlDecode", function($input) {
+            return urldecode($input);
+        });
+        self::extendModifier("urlFriendly", function($input) {
+            return urlencode(self::removeSpecialChars(strtolower($input)));
+        });
+        self::extendModifier("trim", function($input) {
+            return trim($input);
+        });
+        self::extendModifier("sha1", function($input) {
+            return sha1($input);
+        });
+        self::extendModifier("numberFormat", function($input,$precision = 2) {
+            return number_format($input,(int)$precision);
+        });
+        self::extendModifier("lastIndex", function($input) {
+            return current(array_reverse(array_keys($input)));
+        });
+        self::extendModifier("lastValue", function($input) {
+            return current(array_reverse($item));
+        });
+        self::extendModifier("jsonEncode", function($input) {
+            return json_encode($input);
+        });
+        self::extendModifier("substr", function($input,$a,$b = 0) {
+            return substr($input,$a,$b);
+        });
+        self::extendModifier("join", function($input,$glue) {
+            return implode($glue,$input);
+        });
+        self::extendModifier("explode", function($input,$del) {
+            return explode($del,$input);
+        });
+        self::extendModifier("replace", function($input,$search,$replace) {
+            return str_replace($search,$replace,$input);
+        });
+        self::extendModifier("preventTagEncode", function($input) {
+            return $input;
+        });
+        self::extendModifier("default", function($input,$default) {
+            return (empty($input) ? $default : $input);
+        });
+        self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
+            $ret = $input;
+            if(empty($ret)) {
+                $ret = $true_val;
+            } else if($false_val) {
+                $ret = $false_val;
+            }
+            return $ret;
+        });
+        self::extendModifier("if", function($input,$condition,$true_val, $false_val = null, $operator = "eq") {
+            switch($operator){
+                case '':
+                case '==':
+                case '=':
+                case 'eq':
+                default:
+                    $operator="==";
+                    break;
+                case '<':
+                case 'lt':
+                    $operator="<";
+                    break;
+                case '>':
+                case 'gt':
+                    $operator=">";
+                    break;
+                case '<=':
+                case 'lte':
+                    $operator="<=";
+                    break;
+                case '>=':
+                case 'gte':
+                    $operator=">=";
+                    break;
+                case 'neq':
+                    $operator = "!=";
+                    break;
+            }
+            $ret = $input;
+            if(eval('return ('.$condition.$operator.$input.');')) {
+                $ret = $true_val;
+            } else if($false_val) {
+                $ret = $false_val;
+            }
+            return $ret;
+        });
+
     }
 }
