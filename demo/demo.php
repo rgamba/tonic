@@ -7,7 +7,11 @@ Tonic::setGlobals(array(
 	"now" => @date_create()
 ));
 $tpl = new Tonic("demo.html");
+// Assign a variable to the template
 $tpl->user_role = "member";
+// Another method to assign variables:
+$tpl->assign("currency","USD");
+// Assign arrays to the template
 $tpl->user = array(
 	"name" => "Ricardo",
 	"last_name" => "Gamba",
@@ -31,6 +35,5 @@ $tpl->users = array(
 		"role" => "member"
 	)
 );
-
-
+// Render the template
 echo $tpl->render();

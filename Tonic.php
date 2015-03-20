@@ -1,6 +1,6 @@
 <?php
 /**
-* tonic v2.0
+* tonic v2.1
 *
 * Lightweight PHP templating engine
 *

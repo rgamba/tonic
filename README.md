@@ -1,7 +1,5 @@
 # tonic
 Fast and powerful PHP templating engine that compiles down to native PHP code.
-## Changelog
-* 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
 
 ## Usage
 Using Tonic is pretty straight forward.
@@ -109,7 +107,7 @@ Tonic::extendModifier("myFunction",function($input, $prepend, $append = ""){
     // $input will hold the current variable value, it's mandatory that your lambda
     // function has an input receiver, all other arguments are optional
     return $prepend . $input . $append;
-})
+});
 ```
 And you can easily use this modifier:
 ```html
@@ -164,3 +162,6 @@ Or if the array key is needed
 {endloop}
 </ul>
 ```
+## Changelog
+* 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
+* 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
