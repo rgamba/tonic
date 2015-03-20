@@ -98,9 +98,23 @@ jsonEncode() | Alias of json_encode()
 replace(find,replace) | Alias of str_replace()
 default(value) | In case variable is empty, assign it value
 ifEmpty(value [,else_value]) | If variable is empty assign it value, else if else_value is set, set it to else_value
-if(value, then_value [,else_value [,comparisson_operator]] ) | Conditionally set the variable's value
+if(value, then_value [,else_value [,comparisson_operator]] ) | Conditionally set the variable's value. All arguments can be variables
 preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
 
+### Creating custom modifiers
+If you need a custom modifier you can extend the list and create your own.
+```php
+// This function will only prepend and append some text to the variable
+Tonic::extendModifier("myFunction",function($input, $prepend, $append = ""){
+    // $input will hold the current variable value, it's mandatory that your lambda
+    // function has an input receiver, all other arguments are optional
+    return $prepend . $input . $append;
+})
+```
+And you can easily use this modifier:
+```html
+<p>{$name.myFunction("hello "," goodbye")}</p>
+```
 ## Include templates
 You can include a template inside another template
 ```html

@@ -62,16 +62,182 @@ class Tonic{
     private $source;
     private $content;
     private $is_php = false;
+    private static $modifiers = null;
 
     /**
      * Object constructor
      * @param $file template file to load
      */
     public function __construct($file=NULL){
+        self::initModifiers();
         if(!empty($file)){
             $this->file=$file;
             $this->load();
         }
+    }
+
+    private static function initModifiers(){
+        if(self::$modifiers != null)
+            return;
+        self::extendModifier("upper", function($input) {
+            return strtoupper($input);
+        });
+        self::extendModifier("lower", function($input) {
+            return strtolower($input);
+        });
+        self::extendModifier("capitalize", function($input) {
+            return ucwords($input);
+        });
+        self::extendModifier("abs", function($input) {
+            return abs($input);
+        });
+        self::extendModifier("isEmpty", function($input) {
+            return empty($input);
+        });
+        self::extendModifier("truncate", function($input,$len) {
+            return substr($input,0,$len).(strlen($input) > $len ? "..." : "");
+        });
+        self::extendModifier("count", function($input) {
+            return count($input);
+        });
+        self::extendModifier("length", function($input) {
+            return count($input);
+        });
+        self::extendModifier("toLocal", function($input) {
+            return date_timezone_set($input, timezone_open(self::$local_tz));
+        });
+        self::extendModifier("toTz", function($input,$tz) {
+            return date_timezone_set($input, timezone_open($tz));
+        });
+        self::extendModifier("toGMT", function($input,$tz) {
+            return date_timezone_set($input, timezone_open("GMT"));
+        });
+        self::extendModifier("date", function($input,$format) {
+            return date_format($input,$format);
+        });
+        self::extendModifier("nl2br", function($input) {
+            return nl2br($input);
+        });
+        self::extendModifier("stripSlashes", function($input) {
+            return stripslashes($input);
+        });
+        self::extendModifier("sum", function($input,$val) {
+            return $input + (float)$val;
+        });
+        self::extendModifier("substract", function($input,$val) {
+            return $input - (float)$val;
+        });
+        self::extendModifier("multiply", function($input,$val) {
+            return $input * (float)$val;
+        });
+        self::extendModifier("divide", function($input,$val) {
+            return $input / (float)$val;
+        });
+        self::extendModifier("mod", function($input,$val) {
+            return $input % (float)$val;
+        });
+        self::extendModifier("encodeTags", function($input) {
+            return htmlspecialchars($input,ENT_NOQUOTES);
+        });
+        self::extendModifier("decodeTags", function($input) {
+            return htmlspecialchars_decode($input);
+        });
+        self::extendModifier("stripTags", function($input) {
+            return strip_tags($input);
+        });
+        self::extendModifier("urlDecode", function($input) {
+            return urldecode($input);
+        });
+        self::extendModifier("urlFriendly", function($input) {
+            return urlencode(self::removeSpecialChars(strtolower($input)));
+        });
+        self::extendModifier("trim", function($input) {
+            return trim($input);
+        });
+        self::extendModifier("sha1", function($input) {
+            return sha1($input);
+        });
+        self::extendModifier("numberFormat", function($input,$precision = 2) {
+            return number_format($input,(int)$precision);
+        });
+        self::extendModifier("lastIndex", function($input) {
+            return current(array_reverse(array_keys($input)));
+        });
+        self::extendModifier("lastValue", function($input) {
+            return current(array_reverse($item));
+        });
+        self::extendModifier("jsonEncode", function($input) {
+            return json_encode($input);
+        });
+        self::extendModifier("substr", function($input,$a,$b = 0) {
+            return substr($input,$a,$b);
+        });
+        self::extendModifier("join", function($input,$glue) {
+            return implode($glue,$input);
+        });
+        self::extendModifier("explode", function($input,$del) {
+            return explode($del,$input);
+        });
+        self::extendModifier("replace", function($input,$search,$replace) {
+            return str_replace($search,$replace,$input);
+        });
+        self::extendModifier("default", function($input,$default) {
+            return (empty($input) ? $default : $input);
+        });
+        self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
+            $ret = $input;
+            if(empty($ret)) {
+                $ret = $true_val;
+            } else if($false_val) {
+                $ret = $false_val;
+            }
+            return $ret;
+        });
+        self::extendModifier("if", function($input,$condition,$true_val, $false_val = null, $operator = "eq") {
+            switch($operator){
+                case '':
+                case '==':
+                case '=':
+                case 'eq':
+                default:
+                    $operator="==";
+                    break;
+                case '<':
+                case 'lt':
+                    $operator="<";
+                    break;
+                case '>':
+                case 'gt':
+                    $operator=">";
+                    break;
+                case '<=':
+                case 'lte':
+                    $operator="<=";
+                    break;
+                case '>=':
+                case 'gte':
+                    $operator=">=";
+                    break;
+                case 'neq':
+                    $operator = "!=";
+                    break;
+            }
+            $ret = $input;
+            if(eval('return ('.$condition.$operator.$input.');')) {
+                $ret = $true_val;
+            } else if($false_val) {
+                $ret = $false_val;
+            }
+            return $ret;
+        });
+
+    }
+
+    public static function extendModifier($name, $func){
+        if(!is_callable($func))
+            return false;
+        self::$modifiers[$name] = $func;
+        return true;
     }
 
     public static function setGlobals($g=array()){
@@ -387,188 +553,12 @@ class Tonic{
             $name=$modifier[0];
             $params=substr($modifier[1],0,-1);
             $params=$this->getParams($params);
-
-            switch($name){
-                default:
-                    $ov=$name.'('.implode(',',$params).')';
-                    break;
-                case 'upper':
-                    $ov='strtoupper('.$ov.')';
-                    break;
-                case 'lower':
-                    $ov='strtolower('.$ov.')';
-                    break;
-                case 'capitalize':
-                    $ov='ucwords('.$ov.')';
-                    break;
-                case 'abs':
-                    $ov='abs('.$ov.')';
-                    break;
-                case 'isEmpty':
-                    $ov='empty('.$ov.')';
-                    break;
-                case 'truncate':
-                    $ov='substr('.$ov.',0,'.$params[0].').(strlen('.$ov.') > '.$params[0].' ? "..." : "")';
-                    break;
-                case 'count':
-                case 'length':
-                    $ov='(is_string('.$ov.') ? strlen('.$ov.') : count('.$ov.'))';
-                    break;
-                case 'toLocalTime':
-                case 'toLocalDate':
-                case 'toLocal':
-                    $ov='date_timezone_set('.$ov.', timezone_open("'.self::$local_tz.'"))';
-                    break;
-                case 'toTz':
-                    $ov='date_timezone_set('.$ov.', timezone_open("'.$params[0].'"))';
-                    break;
-                case 'toGMT':
-                    $ov='date_timezone_set('.$ov.', timezone_open("GMT"))';
-                    break;
-                case 'date':
-                    $ov='date_format('.$ov.',"'.$params[0].'")';
-                    break;
-                case 'nl2br':
-                    $ov='nl2br('.$ov.')';
-                    break;
-                case 'print_r':
-                    $ov='print_r('.$ov.')';
-                    break;
-                case 'stripSlashes':
-                    $ov='stripslashes('.$ov.')';
-                    break;
-                case 'sum':
-                    $ov=''.$ov.'+'.(float)$params[0];
-                    break;
-                case 'substract':
-                    $ov=''.$ov.'-'.(float)$params[0];
-                    break;
-                case 'multiply':
-                    $ov=''.$ov.'*'.(float)$params[0];
-                    break;
-                case 'divide':
-                    $ov=''.$ov.'/'.(float)$params[0];
-                    break;
-                case 'addSlashes':
-                    $ov='addSlashes('.$ov.')';
-                    break;
-                case 'encodeTags':
-                    $ov='htmlspecialchars('.$ov.',ENT_NOQUOTES)';
-                    break;
-                case 'decodeTags':
-                    $ov='htmlspecialchars_decode('.$ov.')';
-                    break;
-                case 'stripTags':
-                    $ov='strip_tags('.$ov.')';
-                    break;
-                case 'urldecode':
-                    $ov='urldecode('.$ov.')';
-                    break;
-                case 'urlencode':
-                    $ov='urlencode('.$ov.')';
-                    break;
-                case 'urlFriendly':
-                    $ov="urlencode(self::removeSpecialChars(strtolower(".$ov.")))";
-                    break;
-                case 'trim':
-                    $ov='trim('.$ov.')';
-                    break;
-                case 'sha1':
-                    $ov='sha1('.$ov.')';
-                    break;
-                case 'numberFormat':
-                    $ov='number_format('.$ov.','.(int)$params[0].')';
-                    break;
-                case 'lastKey':
-                case 'lastIndex':
-                    $ov='current(array_reverse(array_keys('.$ov.')))';
-                    break;
-                case 'last':
-                case 'lastValue':
-                    $ov='current(array_reverse('.$ov.'))';
-                    break;
-                case 'jsonEncode':
-                    $ov='json_encode('.$ov.')';
-                    break;
-                case 'substr':
-                    if(!isset($params[1]))
-                        $ov='substr('.$ov.',"'.$params[0].'")';
-                    else
-                        $ov='substr('.$ov.',"'.$params[0].'","'.$params[1].'")';
-                    break;
-                case 'join':
-                    $ov='implode("'.$params[0].'",'.$ov.')';
-                    break;
-                case 'split':
-                    $ov='explode("'.$params[0].'",'.$ov.')';
-                    break;
-                case 'jsonEncode':
-                    $ov='json_encode('.$ov.')';
-                    break;
-                case 'replace':
-                    $params[1]=str_replace('$this','".'.$ov.'."',$params[1]);
-                    $ov='str_replace("'.$params[0].'","'.$params[1].'",'.$ov.')';
-                    break;
-                case 'default':
-                    $params[0]=str_replace('$this','".'.$ov.'."',$params[0]);
-                    $ov='('.$ov.' == "" || '.$ov.' == null ? "'.$params[0].'" : '. $ov .')';
-                    break;
-                case 'ifEmpty':
-                    $params[0]=str_replace('$this','".'.$ov.'."',$params[0]);
-                    $params[1]=str_replace('$this','".'.$ov.'."',$params[1]);
-                    $ov='('.$ov.' == "" || '.$ov.' == null ? "'.$params[0].'" : '.(!isset($params[1]) ? $ov : '"'.$params[1].'"').')';
-                    break;
-                case 'if':
-                    $params[0]=str_replace('$this','".'.$ov.'."',$params[0]);
-                    $params[1]=str_replace('$this','".'.$ov.'."',$params[1]);
-                    if(isset($params[2]))
-                        $params[2]=str_replace('$this','".'.$ov.'."',$params[2]);
-                    switch(@$params[3]){
-                        case '':
-                        case '==':
-                        case '=':
-                        case 'eq':
-                        default:
-                            $operator="==";
-                            break;
-                        case '<':
-                        case 'lt':
-                            $operator="<";
-                            break;
-                        case '>':
-                        case 'gt':
-                            $operator=">";
-                            break;
-                        case '<=':
-                        case 'lte':
-                            $operator="<=";
-                            break;
-                        case '>=':
-                        case 'gte':
-                            $operator=">=";
-                            break;
-                        case 'neq':
-                            $operator = "!=";
-                            break;
-                    }
-                    $ov='('.$ov.' '.$operator.' "'.$params[0].'" ? "'.$params[1].'" : '.(!isset($params[2]) ? $ov : '"'.$params[2].'"').')';
-                    break;
-                // Especiales para variables globales
-                case 'path':
-                    $ov='"'.self::getPath($params[0]).'"';
-                    break;
-                case 'msg':
-                    $ov='"'.self::getSysMsg($params[0],(empty($params[1]) ? '' : $params[1])).'"';
-                    break;
-                case 'preventTagEncode':
-                    break;
-                case 'zeroFill':
-                    $ov='self::zeroFill('.$ov.',"'.$params[0].'")';
-                    break;
-                case 'controller':
-                    $ov='Sys::get("module_controller")';
-                    break;
+            foreach(self::$modifiers as $_name => $mod) {
+                if($_name != $name)
+                    continue;
+                $ov = 'call_user_func(self::$modifiers["'.$_name.'"],'.$ov.(!empty($params) ? ',"'.implode('","',$params).'"' : "").')';
             }
+            continue;
         }
         $var=$ov;
     }
@@ -617,9 +607,12 @@ class Tonic{
     }
 
     private function findVarInString(&$string){
+        return self::findVariableInString($string);
+    }
+
+    private static function findVariableInString(&$string){
         $var_match=array();
         preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.\",>]+)/',$string,$var_match);
-
         if(!empty($var_match[0])){
             foreach($var_match[1] as $j => $var){
                 $_var_name=explode('.',$string);

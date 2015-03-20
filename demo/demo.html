@@ -18,7 +18,7 @@
 		<td>Name: </td><td>{$user.name.upper()}</td>
 	</tr>
 	<tr>
-		<td>Nickname: </td><td>{$user.name.lower().if("ricardo", "ricky").capitalize()}</td>
+		<td>Nickname: </td><td>{$user.name.lower().if("admin", "administrator", $user_role).capitalize()}</td>
 	</tr>
 	<tr>
 		<td>Extra: </td><td>{$user.extra.truncate(20)}</td>
