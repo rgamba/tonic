@@ -7,6 +7,9 @@ Tonic::setGlobals(array(
 	"now" => @date_create()
 ));
 $tpl = new Tonic("demo.html");
+// Uncomment the following 2 lines to enable caching
+//$tpl->enable_content_cache = true;
+//$tpl->cache_dir = './cache/';
 // Assign a variable to the template
 $tpl->user_role = "member";
 // Another method to assign variables:

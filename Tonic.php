@@ -12,7 +12,7 @@ class Tonic{
     * If set to true, will try to encode all output tags with
     * htmlspecialchars()
     */
-    public $escape_tags_in_vars = false;
+    public static $escape_tags_in_vars = false;
     /**
     * Enable template caching
     */
@@ -186,8 +186,6 @@ class Tonic{
                 $this->handleVars();
                 $this->handleSwitchs();
                 $this->compile();
-                // Includes after compile
-                $this->handleNoRender();
             }
         }else{
             $this->renderPhp();
@@ -244,9 +242,9 @@ class Tonic{
 
     private function saveCache(){
         $file_name=md5("templat=".$this->file);
-        $cache=fopen($this->cache_dir.$file_name,'w');
-        fwrite($cache,$this->content);
-        fclose($cache);
+        $cache=@fopen($this->cache_dir.$file_name,'w');
+        @fwrite($cache,$this->content);
+        @fclose($cache);
     }
 
     private function removeWhiteSpaces($str) {
