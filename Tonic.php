@@ -7,6 +7,7 @@
 * @author Ricardo Gamba <rgamba@gmail.com>
 * @license BSD 3-Clause License
 */
+namespace Tonic;
 class Tonic{
     /**
     * If set to true, will try to encode all output tags with
@@ -357,8 +358,8 @@ class Tonic{
         }
         try {
             $ret = call_user_func_array(self::$modifiers[$args[0]],array_slice($args,1));
-        } catch(Exception $e){
-            throw new Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: ".$e->getMessage()."</span>");
+        } catch(\Exception $e){
+            throw new \Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: ".$e->getMessage()."</span>");
         }
         return $ret;
     }
@@ -417,7 +418,7 @@ class Tonic{
                     if(self::$escape_tags_in_vars == true)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                 }
-                $rep='<?php try{ echo '.$var_name.'; } catch(Exception $e) { echo $e->getMessage(); } ?>';
+                $rep='<?php try{ echo '.$var_name.'; } catch(\Exception $e) { echo $e->getMessage(); } ?>';
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
@@ -670,7 +671,7 @@ class Tonic{
         });
         self::extendModifier("truncate", function($input,$len) {
             if(empty($len)) {
-                throw new Exception("length parameter is required");
+                throw new \Exception("length parameter is required");
             }
             return substr($input,0,$len).(strlen($input) > $len ? "..." : "");
         });
@@ -682,31 +683,31 @@ class Tonic{
         });
         self::extendModifier("toLocal", function($input) {
             if(!is_object($input)){
-                throw new Exception("variable is not a valid date");
+                throw new \Exception("variable is not a valid date");
             }
             return date_timezone_set($input, timezone_open(self::$local_tz));
         });
         self::extendModifier("toTz", function($input,$tz) {
             if(!is_object($input)){
-                throw new Exception("variable is not a valid date");
+                throw new \Exception("variable is not a valid date");
             }
             return date_timezone_set($input, timezone_open($tz));
         });
         self::extendModifier("toGMT", function($input,$tz) {
             if(!is_object($input)){
-                throw new Exception("variable is not a valid date");
+                throw new \Exception("variable is not a valid date");
             }
             if(empty($tz)){
-                throw new Exception("timezone is required");
+                throw new \Exception("timezone is required");
             }
             return date_timezone_set($input, timezone_open("GMT"));
         });
         self::extendModifier("date", function($input,$format) {
             if(!is_object($input)){
-                throw new Exception("variable is not a valid date");
+                throw new \Exception("variable is not a valid date");
             }
             if(empty($format)){
-                throw new Exception("date format is required");
+                throw new \Exception("date format is required");
             }
             return date_format($input,$format);
         });
@@ -721,31 +722,31 @@ class Tonic{
         });
         self::extendModifier("sum", function($input,$val) {
             if(!is_numeric($input) || !is_numeric($val)){
-                throw new Exception("input and value must be numeric");
+                throw new \Exception("input and value must be numeric");
             }
             return $input + (float)$val;
         });
         self::extendModifier("substract", function($input,$val) {
             if(!is_numeric($input) || !is_numeric($val)){
-                throw new Exception("input and value must be numeric");
+                throw new \Exception("input and value must be numeric");
             }
             return $input - (float)$val;
         });
         self::extendModifier("multiply", function($input,$val) {
             if(!is_numeric($input) || !is_numeric($val)){
-                throw new Exception("input and value must be numeric");
+                throw new \Exception("input and value must be numeric");
             }
             return $input * (float)$val;
         });
         self::extendModifier("divide", function($input,$val) {
             if(!is_numeric($input) || !is_numeric($val)){
-                throw new Exception("input and value must be numeric");
+                throw new \Exception("input and value must be numeric");
             }
             return $input / (float)$val;
         });
         self::extendModifier("mod", function($input,$val) {
             if(!is_numeric($input) || !is_numeric($val)){
-                throw new Exception("input and value must be numeric");
+                throw new \Exception("input and value must be numeric");
             }
             return $input % (float)$val;
         });
@@ -787,25 +788,25 @@ class Tonic{
         });
         self::extendModifier("sha1", function($input) {
             if(!is_string($input)){
-                throw new Exception("input must be string");
+                throw new \Exception("input must be string");
             }
             return sha1($input);
         });
         self::extendModifier("numberFormat", function($input,$precision = 2) {
             if(!is_numeric($input)){
-                throw new Exception("input must be numeric");
+                throw new \Exception("input must be numeric");
             }
             return number_format($input,(int)$precision);
         });
         self::extendModifier("lastIndex", function($input) {
             if(!is_array($input)){
-                throw new Exception("input must be an array");
+                throw new \Exception("input must be an array");
             }
             return current(array_reverse(array_keys($input)));
         });
         self::extendModifier("lastValue", function($input) {
             if(!is_array($input)){
-                throw new Exception("input must be an array");
+                throw new \Exception("input must be an array");
             }
             return current(array_reverse($input));
         });
@@ -817,31 +818,31 @@ class Tonic{
         });
         self::extendModifier("join", function($input,$glue) {
             if(!is_array($input)){
-                throw new Exception("input must be an array");
+                throw new \Exception("input must be an array");
             }
             if(empty($glue)){
-                throw new Exception("string glue is required");
+                throw new \Exception("string glue is required");
             }
             return implode($glue,$input);
         });
         self::extendModifier("explode", function($input,$del) {
             if(!is_string($input)){
-                throw new Exception("input must be a string");
+                throw new \Exception("input must be a string");
             }
             if(empty($del)){
-                throw new Exception("delimiter is required");
+                throw new \Exception("delimiter is required");
             }
             return explode($del,$input);
         });
         self::extendModifier("replace", function($input,$search,$replace) {
             if(!is_string($input)){
-                throw new Exception("input must be a string");
+                throw new \Exception("input must be a string");
             }
             if(empty($search)){
-                throw new Exception("search is required");
+                throw new \Exception("search is required");
             }
             if(empty($replace)){
-                throw new Exception("replace is required");
+                throw new \Exception("replace is required");
             }
             return str_replace($search,$replace,$input);
         });
@@ -853,7 +854,7 @@ class Tonic{
         });
         self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
             if(empty($true_val)){
-                throw new Exception("true value is required");
+                throw new \Exception("true value is required");
             }
             $ret = $input;
             if(empty($ret)) {
@@ -865,7 +866,7 @@ class Tonic{
         });
         self::extendModifier("if", function($input, $condition, $true_val, $false_val = null, $operator = "eq") {
             if(empty($true_val)){
-                throw new Exception("true value is required");
+                throw new \Exception("true value is required");
             }
             switch($operator){
                 case '':

@@ -1,12 +1,13 @@
 <?php
-error_reporting(E_ALL);
+namespace main;
 require_once("../Tonic.php");
-Tonic::$local_tz = "America/Mexico_city";
+use Tonic;
+Tonic\Tonic::$local_tz = "America/Mexico_city";
 // This will be present in all the templates
-Tonic::setGlobals(array(
+Tonic\Tonic::setGlobals(array(
 	"now" => @date_create()
 ));
-$tpl = new Tonic("demo.html");
+$tpl = new Tonic\Tonic("demo.html");
 // Uncomment the following 2 lines to enable caching
 //$tpl->enable_content_cache = true;
 //$tpl->cache_dir = './cache/';
