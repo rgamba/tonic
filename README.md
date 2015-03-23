@@ -106,6 +106,10 @@ If you need a custom modifier you can extend the list and create your own.
 Tonic::extendModifier("myFunction",function($input, $prepend, $append = ""){
     // $input will hold the current variable value, it's mandatory that your lambda
     // function has an input receiver, all other arguments are optional
+    // We can perform input validations
+    if(empty($prepend)) {
+        throw new Exception("prepend is required");
+    }
     return $prepend . $input . $append;
 });
 ```
