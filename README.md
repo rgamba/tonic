@@ -4,13 +4,14 @@ Fast and powerful PHP templating engine that compiles down to native PHP code.
 ## Usage
 Using Tonic is pretty straight forward.
 ```php
-$tpl = new \Tonic\Tonic("demo.html");
+use Tonic\Tonic;
+$tpl = new Tonic("demo.html");
 $tpl->user_role = "member";
 echo $tpl->render();
 ```
 It's also very flexible. The above code can also be written like:
 ```php
-$tpl = new \Tonic\Tonic();
+$tpl = new Tonic();
 echo $tpl->load("demo.html")->assign("user_role","member")->render();
 ```
 ## Show me the syntax
@@ -31,7 +32,7 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 ## Caching
 All tonic templates are compiled back to native PHP code. It's highly recommended that you use the caching functionality so that the same template doesn't need to be compiled over and over again increasing the CPU usage on server side.
 ```php
-$tpl = new \Tonic\Tonic();
+$tpl = new Tonic();
 $tpl->cache_dir = "./cache/"; // Be sure this directory exists and has writing permissions
 $tpl->enable_content_cache = true; // Importante to set this to true!
 ```
@@ -47,8 +48,8 @@ We can also use modifiers in the same way when using associative arrays:
 ## Working with dates
 It's easy to handle and format dates inside a Tonic template.
 ```php
-\Tonic\Tonic::$local_tz = 'America/New_york'; // Optionaly set the user's local tz
-$tpl = new \Tonic\Tonic();
+Tonic::$local_tz = 'America/New_york'; // Optionaly set the user's local tz
+$tpl = new Tonic();
 $tpl->my_date = date_create();
 ```
 And the template
@@ -59,7 +60,7 @@ Working with timezones
 ```html
 <p>The local date is {$my_date.toLocal().date("Y-m-d h:i a")}</p>
 ```
-Which will render `$my_date` to the timezone configured in `\Tonic\Tonic::$local_tz`
+Which will render `$my_date` to the timezone configured in ` Tonic::$local_tz`
 ### Custom timezone
 ```html
 <p>The local date is {$my_date.toTz("America/Mexico_city").date("Y-m-d h:i a")}</p>
@@ -103,12 +104,12 @@ preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's
 If you need a custom modifier you can extend the list and create your own.
 ```php
 // This function will only prepend and append some text to the variable
-\Tonic\Tonic::extendModifier("myFunction",function($input, $prepend, $append = ""){
+Tonic::extendModifier("myFunction",function($input, $prepend, $append = ""){
     // $input will hold the current variable value, it's mandatory that your lambda
     // function has an input receiver, all other arguments are optional
     // We can perform input validations
     if(empty($prepend)) {
-        throw new Exception("prepend is required");
+        throw new \Exception("prepend is required");
     }
     return $prepend . $input . $append;
 });

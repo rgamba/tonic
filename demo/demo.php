@@ -1,20 +1,44 @@
 <?php
 namespace main;
+
 require_once("../Tonic.php");
-use Tonic;
-Tonic\Tonic::$local_tz = "America/Mexico_city";
-// This will be present in all the templates
-Tonic\Tonic::setGlobals(array(
-	"now" => @date_create()
+
+use Tonic\Tonic;
+
+// Set the local timezone
+Tonic::$local_tz = "America/Mexico_city";
+
+// This variables will be available in all the templates
+Tonic::setGlobals(array(
+	"now" => @date_create(),
+	"context" => array(
+		"post" => $_POST,
+		"get" => $_GET
+	)
 ));
-$tpl = new Tonic\Tonic("demo.html");
+
+// Create a custom modifier
+Tonic::extendModifier("myModifier",function($input, $prepend, $append = ""){
+    // $input will hold the current variable value, it's mandatory that your lambda
+    // function has an input receiver, all other arguments are optional
+    // We can perform input validations
+    if(empty($prepend)) {
+        throw new \InvalidArgumentException("prepend is required");
+    }
+    return $prepend . $input . $append;
+});
+
+$tpl = new Tonic("demo.html");
+
 // Uncomment the following 2 lines to enable caching
 //$tpl->enable_content_cache = true;
 //$tpl->cache_dir = './cache/';
 // Assign a variable to the template
 $tpl->user_role = "member";
+
 // Another method to assign variables:
 $tpl->assign("currency","USD");
+
 // Assign arrays to the template
 $tpl->user = array(
 	"name" => "Ricardo",
@@ -22,6 +46,8 @@ $tpl->user = array(
 	"email" => "rgamba@gmail.com",
 	"extra" => "This is a large description of the user"
 );
+
+// Assign a more complex array
 $tpl->users = array(
 	array(
 		"name" => "rocio lavin",
@@ -39,6 +65,8 @@ $tpl->users = array(
 		"role" => "member"
 	)
 );
+
 $tpl->number = 10;
+
 // Render the template
 echo $tpl->render();

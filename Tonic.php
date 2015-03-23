@@ -8,6 +8,7 @@
 * @license BSD 3-Clause License
 */
 namespace Tonic;
+
 class Tonic{
     /**
     * If set to true, will try to encode all output tags with
@@ -68,6 +69,8 @@ class Tonic{
     * @param Lambda function, modifier function
     */
     public static function extendModifier($name, $func){
+        if(!empty(self::$modifiers[$name]))
+            return false;
         if(!is_callable($func))
             return false;
         self::$modifiers[$name] = $func;
@@ -640,8 +643,6 @@ class Tonic{
     }
 
     private static function initModifiers(){
-        if(self::$modifiers != null)
-            return;
         self::extendModifier("upper", function($input) {
             if(!is_string($input)){
                 return $input;
