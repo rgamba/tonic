@@ -355,6 +355,22 @@ class Tonic{
         return $p;
     }
 
+    private static function callModifier() {
+        $args = func_get_args();
+        if(empty($args[0])){
+            return "[empty modifier]";
+        }
+        if(empty(self::$modifiers[$args[0]])){
+            return "[invalid modifier '$args[0]']";
+        }
+        try {
+            $ret = call_user_func_array(self::$modifiers[$args[0]],array_slice($args,1));
+        } catch(Exception $e){
+            throw new Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: ".$e->getMessage()."</span>");
+        }
+        return $ret;
+    }
+
     private function applyModifiers(&$var,$mod){
         $ov=$var;
         foreach($mod as $name){
@@ -365,7 +381,7 @@ class Tonic{
             foreach(self::$modifiers as $_name => $mod) {
                 if($_name != $name)
                     continue;
-                $ov = 'call_user_func(self::$modifiers["'.$_name.'"],'.$ov.(!empty($params) ? ',"'.implode('","',$params).'"' : "").')';
+                $ov = 'self::callModifier("'.$_name.'",'.$ov.(!empty($params) ? ',"'.implode('","',$params).'"' : "").')';
             }
             continue;
         }
@@ -409,7 +425,7 @@ class Tonic{
                     if(self::$escape_tags_in_vars == true)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                 }
-                $rep='<?php echo @'.$var_name.'; ?>';
+                $rep='<?php try{ echo @'.$var_name.'; } catch(Exception $e) { echo $e->getMessage(); } ?>';
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
@@ -649,6 +665,9 @@ class Tonic{
             return empty($input);
         });
         self::extendModifier("truncate", function($input,$len) {
+            if(empty($len)) {
+                throw new Exception("length parameter is required");
+            }
             return substr($input,0,$len).(strlen($input) > $len ? "..." : "");
         });
         self::extendModifier("count", function($input) {
@@ -658,15 +677,33 @@ class Tonic{
             return count($input);
         });
         self::extendModifier("toLocal", function($input) {
+            if(!is_object($input)){
+                throw new Exception("variable is not a valid date");
+            }
             return date_timezone_set($input, timezone_open(self::$local_tz));
         });
         self::extendModifier("toTz", function($input,$tz) {
+            if(!is_object($input)){
+                throw new Exception("variable is not a valid date");
+            }
             return date_timezone_set($input, timezone_open($tz));
         });
         self::extendModifier("toGMT", function($input,$tz) {
+            if(!is_object($input)){
+                throw new Exception("variable is not a valid date");
+            }
+            if(empty($tz)){
+                throw new Exception("timezone is required");
+            }
             return date_timezone_set($input, timezone_open("GMT"));
         });
         self::extendModifier("date", function($input,$format) {
+            if(!is_object($input)){
+                throw new Exception("variable is not a valid date");
+            }
+            if(empty($format)){
+                throw new Exception("date format is required");
+            }
             return date_format($input,$format);
         });
         self::extendModifier("nl2br", function($input) {
@@ -723,16 +760,28 @@ class Tonic{
         self::extendModifier("jsonEncode", function($input) {
             return json_encode($input);
         });
-        self::extendModifier("substr", function($input,$a,$b = 0) {
+        self::extendModifier("substr", function($input,$a = 0,$b = 0) {
             return substr($input,$a,$b);
         });
         self::extendModifier("join", function($input,$glue) {
+            if(empty($glue)){
+                throw new Exception("string glue is required");
+            }
             return implode($glue,$input);
         });
         self::extendModifier("explode", function($input,$del) {
+            if(empty($del)){
+                throw new Exception("delimiter is required");
+            }
             return explode($del,$input);
         });
         self::extendModifier("replace", function($input,$search,$replace) {
+            if(empty($search)){
+                throw new Exception("search is required");
+            }
+            if(empty($replace)){
+                throw new Exception("replace is required");
+            }
             return str_replace($search,$replace,$input);
         });
         self::extendModifier("preventTagEncode", function($input) {
@@ -742,6 +791,9 @@ class Tonic{
             return (empty($input) ? $default : $input);
         });
         self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
+            if(empty($true_val)){
+                throw new Exception("true value is required");
+            }
             $ret = $input;
             if(empty($ret)) {
                 $ret = $true_val;
@@ -751,6 +803,9 @@ class Tonic{
             return $ret;
         });
         self::extendModifier("if", function($input,$condition,$true_val, $false_val = null, $operator = "eq") {
+            if(empty($true_val)){
+                throw new Exception("true value is required");
+            }
             switch($operator){
                 case '':
                 case '==':
