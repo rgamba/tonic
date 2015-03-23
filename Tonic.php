@@ -425,7 +425,7 @@ class Tonic{
                     if(self::$escape_tags_in_vars == true)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                 }
-                $rep='<?php try{ echo @'.$var_name.'; } catch(Exception $e) { echo $e->getMessage(); } ?>';
+                $rep='<?php try{ echo '.$var_name.'; } catch(Exception $e) { echo $e->getMessage(); } ?>';
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
@@ -746,9 +746,15 @@ class Tonic{
             return trim($input);
         });
         self::extendModifier("sha1", function($input) {
+            if(!is_string($input)){
+                throw new Exception("input must be string");
+            }
             return sha1($input);
         });
         self::extendModifier("numberFormat", function($input,$precision = 2) {
+            if(!is_numeric($input)){
+                throw new Exception("input must be numeric");
+            }
             return number_format($input,(int)$precision);
         });
         self::extendModifier("lastIndex", function($input) {
@@ -802,7 +808,7 @@ class Tonic{
             }
             return $ret;
         });
-        self::extendModifier("if", function($input,$condition,$true_val, $false_val = null, $operator = "eq") {
+        self::extendModifier("if", function($input, $condition, $true_val, $false_val = null, $operator = "eq") {
             if(empty($true_val)){
                 throw new Exception("true value is required");
             }
@@ -835,7 +841,7 @@ class Tonic{
                     break;
             }
             $ret = $input;
-            if(eval('return ('.$condition.$operator.$input.');')) {
+            if(eval('return ("'.$condition.'"'.$operator.'"'.$input.'");')) {
                 $ret = $true_val;
             } else if($false_val) {
                 $ret = $false_val;
