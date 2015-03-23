@@ -168,5 +168,6 @@ Or if the array key is needed
 </ul>
 ```
 ## Changelog
+* 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
 * 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
