@@ -33,28 +33,12 @@ class Tonic{
     * Include path
     * @var string
     */
-    public $root='./';
-    /**
-    * Default path to search for includes
-    * that require external controller
-    * @var string
-    */
-    public $controller_root='./';
+    public static $root='';
     /**
     * Default extension for includes
     * @var string
     */
     public $default_extension='.html';
-    /**
-    * Default controller root to use
-    * @var <type>
-    */
-    public static $default_controller_root;
-    /**
-    * Default include path
-    * @var <type>
-    */
-    public static $default_root;
 
     private static $globals=array();
     private $file;
@@ -113,7 +97,11 @@ class Tonic{
         if($ext == "php"){
             $this->is_php = true;
         }else{
-            $this->source=file_get_contents($this->file);
+            if(!file_exists(self::$root . $this->file)) {
+                echo "<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>tonic</b>: unable to load file '".self::$root . $this->file."'</span>";
+                return false;
+            }
+            $this->source=file_get_contents(self::$root . $this->file);
             $this->content=&$this->source;
         }
         return $this;
@@ -304,9 +292,13 @@ class Tonic{
                 if (substr($include,0,4) == "http") {
                     $rep = file_get_contents($include);
                 } else {
+                    ob_start();
                     $inc = new Tonic($include);
                     $inc->setContext($this->assigned);
                     $rep = $inc->render();
+                    $err = ob_get_clean();
+                    if(!empty($err))
+                        $rep = $err;
                 }
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
