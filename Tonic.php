@@ -650,15 +650,27 @@ class Tonic{
         if(self::$modifiers != null)
             return;
         self::extendModifier("upper", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return strtoupper($input);
         });
         self::extendModifier("lower", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return strtolower($input);
         });
         self::extendModifier("capitalize", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return ucwords($input);
         });
         self::extendModifier("abs", function($input) {
+            if(!is_numeric($input)){
+                return $input;
+            }
             return abs($input);
         });
         self::extendModifier("isEmpty", function($input) {
@@ -710,39 +722,75 @@ class Tonic{
             return nl2br($input);
         });
         self::extendModifier("stripSlashes", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return stripslashes($input);
         });
         self::extendModifier("sum", function($input,$val) {
+            if(!is_numeric($input) || !is_numeric($val)){
+                throw new Exception("input and value must be numeric");
+            }
             return $input + (float)$val;
         });
         self::extendModifier("substract", function($input,$val) {
+            if(!is_numeric($input) || !is_numeric($val)){
+                throw new Exception("input and value must be numeric");
+            }
             return $input - (float)$val;
         });
         self::extendModifier("multiply", function($input,$val) {
+            if(!is_numeric($input) || !is_numeric($val)){
+                throw new Exception("input and value must be numeric");
+            }
             return $input * (float)$val;
         });
         self::extendModifier("divide", function($input,$val) {
+            if(!is_numeric($input) || !is_numeric($val)){
+                throw new Exception("input and value must be numeric");
+            }
             return $input / (float)$val;
         });
         self::extendModifier("mod", function($input,$val) {
+            if(!is_numeric($input) || !is_numeric($val)){
+                throw new Exception("input and value must be numeric");
+            }
             return $input % (float)$val;
         });
         self::extendModifier("encodeTags", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return htmlspecialchars($input,ENT_NOQUOTES);
         });
         self::extendModifier("decodeTags", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return htmlspecialchars_decode($input);
         });
         self::extendModifier("stripTags", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return strip_tags($input);
         });
         self::extendModifier("urlDecode", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return urldecode($input);
         });
         self::extendModifier("urlFriendly", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return urlencode(self::removeSpecialChars(strtolower($input)));
         });
         self::extendModifier("trim", function($input) {
+            if(!is_string($input)){
+                return $input;
+            }
             return trim($input);
         });
         self::extendModifier("sha1", function($input) {
@@ -758,10 +806,16 @@ class Tonic{
             return number_format($input,(int)$precision);
         });
         self::extendModifier("lastIndex", function($input) {
+            if(!is_array($input)){
+                throw new Exception("input must be an array");
+            }
             return current(array_reverse(array_keys($input)));
         });
         self::extendModifier("lastValue", function($input) {
-            return current(array_reverse($item));
+            if(!is_array($input)){
+                throw new Exception("input must be an array");
+            }
+            return current(array_reverse($input));
         });
         self::extendModifier("jsonEncode", function($input) {
             return json_encode($input);
@@ -770,18 +824,27 @@ class Tonic{
             return substr($input,$a,$b);
         });
         self::extendModifier("join", function($input,$glue) {
+            if(!is_array($input)){
+                throw new Exception("input must be an array");
+            }
             if(empty($glue)){
                 throw new Exception("string glue is required");
             }
             return implode($glue,$input);
         });
         self::extendModifier("explode", function($input,$del) {
+            if(!is_string($input)){
+                throw new Exception("input must be a string");
+            }
             if(empty($del)){
                 throw new Exception("delimiter is required");
             }
             return explode($del,$input);
         });
         self::extendModifier("replace", function($input,$search,$replace) {
+            if(!is_string($input)){
+                throw new Exception("input must be a string");
+            }
             if(empty($search)){
                 throw new Exception("search is required");
             }

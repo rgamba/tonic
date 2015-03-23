@@ -38,5 +38,6 @@ $tpl->users = array(
 		"role" => "member"
 	)
 );
+$tpl->number = 10;
 // Render the template
 echo $tpl->render();
