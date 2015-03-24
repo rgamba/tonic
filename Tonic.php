@@ -213,7 +213,7 @@ class Tonic{
     }
 
     private function assignGlobals(){
-        self::$globals['system']['session'] = @$_SESSION;
+        self::$globals['__func'] = null;
         $this->setContext(self::$globals);
     }
 
@@ -393,6 +393,9 @@ class Tonic{
                 $var_name=explode('.',$var_name);
                 if(count($var_name)>1){
                     $vn=$var_name[0];
+                    if(empty($vn)){
+                        $vn = "__func";
+                    }
                     unset($var_name[0]);
                     $mod=array();
                     foreach($var_name as $j => $index){
@@ -421,7 +424,7 @@ class Tonic{
                     if(self::$escape_tags_in_vars == true)
                         $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
                 }
-                $rep='<?php try{ echo '.$var_name.'; } catch(\Exception $e) { echo $e->getMessage(); } ?>';
+                $rep='<?php try{ echo @'.$var_name.'; } catch(\Exception $e) { echo $e->getMessage(); } ?>';
                 $this->content=str_replace($matches[0][$i],$rep,$this->content);
             }
         }
