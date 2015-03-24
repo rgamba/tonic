@@ -378,14 +378,17 @@ class Tonic{
                     case "":
                         break;
                     case "tag_val":
+                        array_push($mod,"handleAsHtmlEnt()");
+                        break;
                     case "tag_attr_val":
-                        array_push($mod,"safe()");
+                        array_push($mod,"handleAsAttrVal()");
                         break;
                     case "js":
-                        array_push($mod, "addSlashes()");
-                        array_push($mod, "addDoubleQuotes()");
+                    case "js_str":
+                        array_push($mod, 'handleAsJs("'.$context.'")');
                         break;
                 }
+
             }
         }
         if(count($mod) <= 0){
@@ -430,6 +433,7 @@ class Tonic{
                     break;
                 case ">":
                 case "<":
+                case "=":
                     $break = true;
                     break;
 
@@ -462,6 +466,8 @@ class Tonic{
                         break;
                     case "<":
                     case ">":
+                    case ";":
+                    case "=":
                         $break = true;
                         break;
                 }
@@ -1005,6 +1011,39 @@ class Tonic{
         });
         self::extendModifier("default", function($input,$default) {
             return (empty($input) ? $default : $input);
+        });
+        self::extendModifier("handleAsJs", function($input,$context) {
+            if( (is_object($input) || is_array($input)) && $context != "js_str"){
+                return json_encode($input);
+            } else if(is_numeric($input) || is_bool($input)){
+                return $input;
+            } else if(is_null($input)) {
+                return "null";
+            } else {
+                if($context != "js_str"){
+                    return '"' . addslashes($input) .'"';
+                } else {
+                    if(is_object($input) || is_array($input)) {
+                        $input = json_encode($input);
+                    }
+                    return addslashes($input);
+                }
+
+            }
+        });
+        self::extendModifier("handleAsHtmlEnt", function($input) {
+            if(is_object($input) || is_array($input)){
+                return var_dump($input);
+            } else {
+                return htmlentities($input,ENT_QUOTES);
+            }
+        });
+        self::extendModifier("handleAsAttrVal", function($input) {
+            if(is_object($input) || is_array($input)){
+                return http_build_query($input);
+            } else {
+                return urlencode($input);
+            }
         });
         self::extendModifier("addDoubleQuotes", function($input){
             return '"' . $input . '"';

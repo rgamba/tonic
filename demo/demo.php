@@ -16,7 +16,6 @@ Tonic::setGlobals(array(
 		"get" => $_GET
 	)
 ));
-
 // Create a custom modifier
 Tonic::extendModifier("myModifier",function($input, $prepend, $append = ""){
     // $input will hold the current variable value, it's mandatory that your lambda
@@ -69,6 +68,10 @@ $tpl->users = array(
 $tpl->number = 10;
 
 $tpl->js = '{"name" : "Ricardo", "last_name": "Gamba"}';
+$tpl->array = array(
+	"name" => "Ricardo",
+	"last_name" => "Gamba"
+);
 $tpl->js_text = "Ricardo";
 
 // Render the template

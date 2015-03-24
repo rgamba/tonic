@@ -20,12 +20,15 @@
 <script>
 	alert("Hola {$js_text}!");
 	if(true) {
-		var i = {$js};
-		alert(i);
+		var obj = {$array};
+		var obj_in_str = "{$array}";
+		alert(obj);
 	}
 </script>
 <h1 data-attr="{$attr}">Simple variables</h1>
 <br>
+<a href="{$array}">Link</a>
+<p>{$array}</p>
 <table {$attr1}='{$attr3}'>
 	<tr>
 		<td>Name: </td><td>{$user.name}</td>
@@ -38,7 +41,7 @@
 	</tr>
 </table>
 <pre>
-	{$js.ignoreContext()}
+	{$js}
 </pre>
 <h2>Context</h2>
 <p>Print 'test' GET variable: <b>{$context.get.test.default("test variable not set")}</b></p>
