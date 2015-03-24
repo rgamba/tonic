@@ -12,13 +12,21 @@
 			padding: 10px 0;
 			border-bottom: solid 2px #e6e6e6;
 			margin-bottom: 10px;
+			color: {$color};
 		}
 	</style>
 </head>
 <body>
-<h1>Simple variables</h1>
+<script>
+	alert("Hola {$js_text}!");
+	if(true) {
+		var i = {$js};
+		alert(i);
+	}
+</script>
+<h1 data-attr="{$attr}">Simple variables</h1>
 <br>
-<table>
+<table {$attr1}='{$attr3}'>
 	<tr>
 		<td>Name: </td><td>{$user.name}</td>
 	</tr>
@@ -29,6 +37,9 @@
 		<td>Email: </td><td>{$user.email}</td>
 	</tr>
 </table>
+<pre>
+	{$js.ignoreContext()}
+</pre>
 <h2>Context</h2>
 <p>Print 'test' GET variable: <b>{$context.get.test.default("test variable not set")}</b></p>
 <h3>Easy way to check if variables are set or empty</h3>

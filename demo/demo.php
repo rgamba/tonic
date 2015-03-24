@@ -50,7 +50,7 @@ $tpl->user = array(
 // Assign a more complex array
 $tpl->users = array(
 	array(
-		"name" => "rocio lavin",
+		"name" => "rocio 'lavin'",
 		"email" => "rlavin@gmail.com",
 		"role" => "admin"
 	),
@@ -67,6 +67,9 @@ $tpl->users = array(
 );
 
 $tpl->number = 10;
+
+$tpl->js = '{"name" : "Ricardo", "last_name": "Gamba"}';
+$tpl->js_text = "Ricardo";
 
 // Render the template
 echo $tpl->render();
