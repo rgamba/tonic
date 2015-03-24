@@ -118,6 +118,19 @@ And you can easily use this modifier:
 ```html
 <p>{$name.myFunction("hello "," goodbye")}</p>
 ```
+### Anonymous modifiers
+Sometimes you just need to call functions directly from inside the template whose return value is constantly changing and therefore it can't be linked to a static variable. Also, it's value is not dependant on any variable. In those cases you can use anonymous modifiers.
+To do that, you need to create a custom modifier, IGNORE the `$input` parameter in case you need to use other parameters.
+```php
+Tonic::extendModifier("imagesDir", function($input){
+    // Note that $input will always be empty when called this modifier anonymously
+    return "/var/www/" . $_SESSION["theme"] . "/images";
+});
+```
+Then you can call it directly from the template
+```html
+<img src="{$.imagesDir()}/pic.jpg" />
+```
 ## Include templates
 You can include a template inside another template
 ```html
