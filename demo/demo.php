@@ -7,7 +7,7 @@ use Tonic\Tonic;
 
 // Set the local timezone
 Tonic::$local_tz = "America/Mexico_city";
-
+Tonic::$context_aware = true;
 // This variables will be available in all the templates
 Tonic::setGlobals(array(
 	"now" => @date_create(),

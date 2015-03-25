@@ -44,14 +44,16 @@ class Tonic{
     */
     public $default_extension='.html';
 
-    private static $globals=array();
     private $file;
     private $assigned=array();
     private $output="";
     private $source;
     private $content;
+    private $or_content;
     private $is_php = false;
+    private $cur_context = null;
     private static $modifiers = null;
+    private static $globals=array();
 
     /**
     * Object constructor
@@ -110,6 +112,7 @@ class Tonic{
             $this->source=file_get_contents(self::$root . $this->file);
             $this->content=&$this->source;
         }
+        $this->or_content = $this->content;
         return $this;
     }
 
@@ -370,27 +373,26 @@ class Tonic{
     }
 
     private function applyModifiers(&$var,$mod,$match = ""){
-        $context = "";
+        $context = null;
         if(self::$context_aware == true) {
             if(!empty($match) && !in_array("ignoreContext()",$mod)) {
-                $context = $this->getVarContext($match);
-                switch($context){
-                    case "":
+                $context = $this->getVarContext($match, $this->cur_context);
+                switch($context["tag"]){
+                    default:
+                        if($context["in_tag"]){
+                            array_push($mod,"contextTag(".$context["in_str"].")");
+                        } else {
+                            array_push($mod,"contextOutTag()");
+                        }
                         break;
-                    case "tag_val":
-                        array_push($mod,"handleAsHtmlEnt()");
-                        break;
-                    case "tag_attr_val":
-                        array_push($mod,"handleAsAttrVal()");
-                        break;
-                    case "js":
-                    case "js_str":
-                        array_push($mod, 'handleAsJs("'.$context.'")');
+                    case "script":
+                        array_push($mod, 'contextJs('.$context["in_str"].')');
                         break;
                 }
 
             }
         }
+        $this->cur_context = $context;
         if(count($mod) <= 0){
             return;
         }
@@ -410,81 +412,34 @@ class Tonic{
         $var=$ov;
     }
 
-    private function getVarContext($str){
-        $all = $this->content;
-        $i = strpos($all, $str);
+    private function getVarContext($str, $context = null){
+        if($context == null) {
+            $cont = $this->content;
+            $in_str = false;
+            $str_char = "";
+            $in_tag = false;
+            $prev_tag = "";
+            $prev_char = "";
+        } else {
+            $cont = substr($this->content,$context['offset']);
+            $in_str = $context["in_str"];
+            $str_char = $context["str_char"];
+            $in_tag = $context["in_tag"];
+            $prev_tag = $context["tag"];
+            $prev_char = $context["prev_char"];
+        }
+        
+
+        $i = strpos($cont, $str);
         if($i === false){
             return false;
         }
-        // Loop back to se if we're inside a string
-        $in_str = false;
-        $str_char = "";
-        for($j = $i; $j >= 0; $j--){
-            $break = false;
-            $char = substr($all, $j, 1);
-            switch($char) {
-                case "'":
-                case '"':
-                    if(substr($all, $j-1, 1) != "\\"){
-                        $in_str = true;
-                        $str_char = $char;
-                        $break = true;
-                    }
-                    break;
-                case ">":
-                case "<":
-                case "=":
-                    $break = true;
-                    break;
-
-            }
-            if($break){
-                break;
-            }
-        }
-        $i += strlen($str);
-        if($in_str) {
-            // If we're "inside" a string, then verify it by
-            // going forward
-            $_in_str = false;
-            $escaped = false;
-            for($j = $i; $j <= strlen($all); $j++) {
-                $break = false;
-                $char = substr($all, $j, 1);
-                $char."<br>";
-                switch($char) {
-                    case "\\":
-                        $escaped = true;
-                        continue;
-                        break;
-                    case "'":
-                    case '"':
-                        if(!$escaped && $char == $str_char){
-                            $_in_str = true;
-                            $break = true;
-                        }
-                        break;
-                    case "<":
-                    case ">":
-                    case ";":
-                    case "=":
-                        $break = true;
-                        break;
-                }
-                if($escaped) {
-                    $escaped = false;
-                }
-                if($break){
-                    break;
-                }
-            }
-            $in_str = $in_str && $_in_str;
-        }
-        // Loop forward
-        $was_in_str = $in_str;
         $escaped = false;
-        for($j = $i; $j <= strlen($all); $j++){
-            $char = substr($all, $j, 1);
+        $capturing_tag_name = false;
+
+        for($j = 0; $j <= $i; $j++){
+            $prev_char = $char;
+            $char = substr($cont, $j, 1);
             switch($char){
                 case "\\":
                     $escaped = true;
@@ -492,41 +447,56 @@ class Tonic{
                     break;
                 case "'":
                 case '"':
-                    if(!$escaped && $char == $str_char){
+                    if(!$escaped){
+                        if($in_str && $char == $str_char) {
+                            $str_char = $char;
+                        }
                         $in_str = !$in_str;
                     }
                     break;
                 case ">":
                     if(!$in_str){
-                        if($was_in_str){
-                            return "tag_attr_val";
-                        } else {
-                            return "tag_attr";
+                        if($prev_char == "?"){
+                            continue;
+                        }
+                        $in_tag = false;
+                        if($capturing_tag_name) {
+                            $capturing_tag_name = false;
                         }
                     }
                     break;
                 case "<":
                     if(!$in_str){
-                        if(substr($all,$j,8) == "</script"){
-                            if($was_in_str) {
-                                return "js_str";
-                            } else {
-                                return "js";
-                            }
-                        } else if(substr($all,$j,7) == "</style"){
-                            return "css";
-                        } else {
-                            return "tag_val";
+                        if(substr($cont, $j+1, 1) == "?"){
+                            continue;
                         }
-
+                        $prev_tag = "";
+                        $in_tag = true;
+                        $capturing_tag_name = true;
+                        continue;
                     }
                     break;
+                case " ":
+                    if($capturing_tag_name){
+                        $capturing_tag_name = false;
+                    }
+                default:
+                    if($capturing_tag_name){
+                        $prev_tag .= $char;
+                    }
             }
             if($escaped) {
                 $escaped = false;
             }
         }
-        return "";
+        return array(
+            "tag" => $prev_tag,
+            "in_tag" => $in_tag,
+            "in_str" => $in_str,
+            "offset" => $i + (int)$context['offset'],
+            "str_char" => $str_char,
+            "prev_char" => $prev_char
+        );
     }
 
     private function handleVars(){
@@ -1012,15 +982,15 @@ class Tonic{
         self::extendModifier("default", function($input,$default) {
             return (empty($input) ? $default : $input);
         });
-        self::extendModifier("handleAsJs", function($input,$context) {
-            if( (is_object($input) || is_array($input)) && $context != "js_str"){
+        self::extendModifier("contextJs", function($input,$in_str) {
+            if( (is_object($input) || is_array($input)) && !$in_str){
                 return json_encode($input);
             } else if(is_numeric($input) || is_bool($input)){
                 return $input;
             } else if(is_null($input)) {
                 return "null";
             } else {
-                if($context != "js_str"){
+                if(!$in_str){
                     return '"' . addslashes($input) .'"';
                 } else {
                     if(is_object($input) || is_array($input)) {
@@ -1031,18 +1001,23 @@ class Tonic{
 
             }
         });
-        self::extendModifier("handleAsHtmlEnt", function($input) {
+        self::extendModifier("contextOutTag", function($input) {
             if(is_object($input) || is_array($input)){
                 return var_dump($input);
             } else {
                 return htmlentities($input,ENT_QUOTES);
             }
         });
-        self::extendModifier("handleAsAttrVal", function($input) {
-            if(is_object($input) || is_array($input)){
+        self::extendModifier("contextTag", function($input, $in_str) {
+            if((is_object($input) || is_array($input)) && $in_str){
                 return http_build_query($input);
             } else {
-                return urlencode($input);
+                if($in_str) {
+                    return urlencode($input);
+                } else {
+                    return htmlentities($input,ENT_QUOTES);
+                }
+
             }
         });
         self::extendModifier("addDoubleQuotes", function($input){

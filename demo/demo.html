@@ -18,18 +18,16 @@
 </head>
 <body>
 <script>
-	alert("Hola {$js_text}!");
 	if(true) {
 		var obj = {$array};
 		var obj_in_str = "{$array}";
-		alert(obj);
 	}
 </script>
-<h1 data-attr="{$attr}">Simple variables</h1>
+<h1 data-attr="{$array}">Simple variables</h1>
 <br>
 <a href="{$array}">Link</a>
 <p>{$array}</p>
-<table {$attr1}='{$attr3}'>
+<table {$array.name}='{$array}'>
 	<tr>
 		<td>Name: </td><td>{$user.name}</td>
 	</tr>
@@ -84,6 +82,10 @@
 {for $i, $user in $users}
 	<li>User {$i}: {$user.name.capitalize()}  Email: {$user.email}  Role: {$user.role.if("admin","administrator").upper()}</li>
 {endfor}
+</ul>
+
+<ul tn-if="$users">
+	<li tn-loop="$i, $user in $users">User {$i}: {$user.name}</li>
 </ul>
 
 {include  footer.html}
