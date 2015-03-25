@@ -88,5 +88,11 @@
 	<li tn-loop="$i, $user in $users">User {$i}: {$user.name}</li>
 </ul>
 
+<div tn-if="$user_role.upper() eq 'MEMBER'" style="font-size: 30px">
+	<p>Soy MEMBER</p>
+</div>
+
 {include  footer.html}
+
+<tn:include src="footer.html" />
 </body>

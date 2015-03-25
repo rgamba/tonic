@@ -178,6 +178,7 @@ class Tonic{
             if(!$this->getFromCache()){
                 $this->assignGlobals();
                 $this->handleIncludes();
+                $this->handleIfMacros();
                 $this->handleLoops();
                 $this->handleIfs();
                 $this->handleVars();
@@ -428,7 +429,6 @@ class Tonic{
             $prev_tag = $context["tag"];
             $prev_char = $context["prev_char"];
         }
-        
 
         $i = strpos($cont, $str);
         if($i === false){
@@ -586,6 +586,129 @@ class Tonic{
                 $string=str_replace(@$var_match[0][$j],'".'.$_var_name.'."',$string);
             }
         }
+    }
+
+    private function handleIfMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/');
+        if (empty($match)) {
+            return false;
+        }
+        foreach($match as $m) {
+            $starts = strpos($this->content,$m["all"]);
+            $rep = '{if '.str_replace("'",'"',$m['matches'][2]).'}' . preg_replace('/tn-if\s*=\s*".+?"\s*/','',$m['all']) . '{endif}';
+            $this->content = substr_replace($this->content,$rep, $starts, strlen($m["all"]));
+        }
+    }
+
+    private function matchTags($regex){
+        $cont = $this->content;
+        $matches = array();
+        if (!preg_match_all($regex,$cont,$matches)) {
+            return false;
+        }
+        $offset = 0;
+        $_offset = 0;
+        $ret = array();
+        foreach($matches[0] as $k => $match){
+            $_cont = substr($cont,$offset);
+            $in_str = false;
+            $escaped = false;
+            $i = strpos($_cont, $match);
+            $tag = $matches[1][$k];
+            $len_match = strlen($match);
+            $offset += $i + $len_match;
+            $str_char = "";
+            $lvl = 1;
+            $prev_char = "";
+            $prev_tag = "";
+            $struct = "";
+            $in_tag = false;
+            $capturing_tag_name = false;
+            $_m = array();
+            foreach($matches as $z => $v){
+                $_m[$z] = $matches[$z][$k];
+            }
+
+            $ret[$k] = array(
+                "match" => $match,
+                "matches" => $_m,
+                "all" => $match,
+                "inner" => "",
+                "starts_at" => $offset - $len_match,
+                "ends_at" => 0,
+            );
+            for($j = $i + strlen($match); $j <= strlen($_cont); $j++) {
+                $char = substr($_cont, $j, 1);
+                $prev_char = $char;
+                $struct .= $char;
+                $break = false;
+                switch ($char) {
+                    case "\\":
+                        $escaped = true;
+                        continue;
+                        break;
+                    case "'":
+                    case '"':
+                        if(!$escaped){
+                            if($in_str && $char == $str_char) {
+                                $str_char = $char;
+                            }
+                            $in_str = !$in_str;
+                        }
+                        break;
+                    case ">":
+                        if(!$in_str){
+                            if($in_tag) {
+                                $in_tag = false;
+                                if( $prev_tag == "/".$tag ){
+                                    $lvl--;
+                                    if($lvl <= 0) {
+                                        $break=true;
+                                    }
+                                } else if(substr($prev_tag,0,1) == "/"){
+                                    $lvl--;
+                                } else {
+                                    $lvl++;
+                                }
+                                if($capturing_tag_name) {
+                                    $capturing_tag_name = false;
+                                }
+                            }
+                        }
+                        break;
+                    case "<":
+                        if($in_tag){
+                            continue;
+                        }
+                        if(!$in_str){
+                            $prev_tag = "";
+                            $in_tag = true;
+                            $capturing_tag_name = true;
+                            continue;
+                        }
+                        break;
+                    case " ":
+                        if($capturing_tag_name){
+                            $capturing_tag_name = false;
+                        }
+                    default:
+                        if($capturing_tag_name){
+                            $prev_tag .= $char;
+                        }
+                }
+                if($escaped) {
+                    $escaped = false;
+                }
+                if($break){
+                    break;
+                }
+            }
+            $ret[$k]["all"] .= $struct;
+            $struct_len = strlen($struct);
+            $ret[$k]["inner"] = substr($struct,0,$struct_len - strlen($tag)-3);
+            $ret[$k]["ends_at"] = $ret[$k]["starts_at"] + $struct_len + $len_match;
+        }
+        return $ret;
     }
 
     private function handleSwitchs(){
