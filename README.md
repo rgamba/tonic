@@ -133,7 +133,7 @@ Then you can call it directly from the template
 ```
 ## Context awareness
 Tonic prevents you from escaping variables in your app that could led to possible attacks. Each variable that's going to be displayed to the user should be carefully escaped, and it sould be done acoardingly to it's context.
-For example, a variable in a href attr of a link should be escaped in a different way from some variable in a javascript tag or a <h1> tag.
+For example, a variable in a href attr of a link should be escaped in a different way from some variable in a javascript tag or a `<h1>` tag.
 The good news is that tonic does all this work for you.
 ```php
 $tonic->assign("array",array("Name" => "Ricardo", "LastName", "Gamba"));
