@@ -1,6 +1,6 @@
 <?php
 /**
-* tonic v2.2
+* tonic v3.0
 *
 * Lightweight PHP templating engine
 *
@@ -11,10 +11,17 @@ namespace Tonic;
 
 class Tonic{
     /**
-    * If set to true, will try to encode all output tags with
-    * htmlspecialchars()
+    * Enable context awareness
     */
-    public static $escape_tags_in_vars = false;
+    public static $context_aware = true;
+    /**
+    * Local timezone (to use with toLocal() modifier)
+    */
+    public static $local_tz = 'GMT';
+    /**
+    * Include path
+    */
+    public static $root='';
     /**
     * Enable template caching
     */
@@ -28,28 +35,20 @@ class Tonic{
     */
     public $cache_lifetime = 86400;
     /**
-    * Local timezone (to use with toLocal() modifier)
-    */
-    public static $local_tz = 'GMT';
-    /**
-    * Include path
-    * @var string
-    */
-    public static $root='';
-    /**
     * Default extension for includes
-    * @var string
     */
     public $default_extension='.html';
 
-    private static $globals=array();
     private $file;
     private $assigned=array();
     private $output="";
     private $source;
     private $content;
+    private $or_content;
     private $is_php = false;
+    private $cur_context = null;
     private static $modifiers = null;
+    private static $globals=array();
 
     /**
     * Object constructor
@@ -108,6 +107,7 @@ class Tonic{
             $this->source=file_get_contents(self::$root . $this->file);
             $this->content=&$this->source;
         }
+        $this->or_content = $this->content;
         return $this;
     }
 
@@ -173,10 +173,11 @@ class Tonic{
             if(!$this->getFromCache()){
                 $this->assignGlobals();
                 $this->handleIncludes();
+                $this->handleIfMacros();
+                $this->handleLoopMacros();
                 $this->handleLoops();
                 $this->handleIfs();
                 $this->handleVars();
-                $this->handleSwitchs();
                 $this->compile();
             }
         }else{
@@ -367,7 +368,30 @@ class Tonic{
         return $ret;
     }
 
-    private function applyModifiers(&$var,$mod){
+    private function applyModifiers(&$var,$mod,$match = ""){
+        $context = null;
+        if(self::$context_aware == true) {
+            if(!empty($match) && !in_array("ignoreContext()",$mod)) {
+                $context = $this->getVarContext($match, $this->cur_context);
+                switch($context["tag"]){
+                    default:
+                        if($context["in_tag"]){
+                            array_push($mod,"contextTag(".$context["in_str"].")");
+                        } else {
+                            array_push($mod,"contextOutTag()");
+                        }
+                        break;
+                    case "script":
+                        array_push($mod, 'contextJs('.$context["in_str"].')');
+                        break;
+                }
+
+            }
+        }
+        $this->cur_context = $context;
+        if(count($mod) <= 0){
+            return;
+        }
         $ov=$var;
         foreach($mod as $name){
             $modifier=explode('(',$name,2);
@@ -382,6 +406,92 @@ class Tonic{
             continue;
         }
         $var=$ov;
+    }
+
+    private function getVarContext($str, $context = null){
+        if($context == null) {
+            $cont = $this->content;
+            $in_str = false;
+            $str_char = "";
+            $in_tag = false;
+            $prev_tag = "";
+            $prev_char = "";
+        } else {
+            $cont = substr($this->content,$context['offset']);
+            $in_str = $context["in_str"];
+            $str_char = $context["str_char"];
+            $in_tag = $context["in_tag"];
+            $prev_tag = $context["tag"];
+            $prev_char = $context["prev_char"];
+        }
+
+        $i = strpos($cont, $str);
+        if($i === false){
+            return false;
+        }
+        $escaped = false;
+        $capturing_tag_name = false;
+
+        for($j = 0; $j <= $i; $j++){
+            $prev_char = $char;
+            $char = substr($cont, $j, 1);
+            switch($char){
+                case "\\":
+                    $escaped = true;
+                    continue;
+                    break;
+                case "'":
+                case '"':
+                    if(!$escaped){
+                        if($in_str && $char == $str_char) {
+                            $str_char = $char;
+                        }
+                        $in_str = !$in_str;
+                    }
+                    break;
+                case ">":
+                    if(!$in_str){
+                        if($prev_char == "?"){
+                            continue;
+                        }
+                        $in_tag = false;
+                        if($capturing_tag_name) {
+                            $capturing_tag_name = false;
+                        }
+                    }
+                    break;
+                case "<":
+                    if(!$in_str){
+                        if(substr($cont, $j+1, 1) == "?"){
+                            continue;
+                        }
+                        $prev_tag = "";
+                        $in_tag = true;
+                        $capturing_tag_name = true;
+                        continue;
+                    }
+                    break;
+                case " ":
+                    if($capturing_tag_name){
+                        $capturing_tag_name = false;
+                    }
+                default:
+                    if($capturing_tag_name){
+                        $prev_tag .= $char;
+                    }
+            }
+            if($escaped) {
+                $escaped = false;
+            }
+        }
+        return array(
+            "tag" => $prev_tag,
+            "in_tag" => $in_tag,
+            "in_str" => $in_str,
+            "offset" => $i + (int)$context['offset'],
+            "str_char" => $str_char,
+            "prev_char" => $prev_char
+        );
     }
 
     private function handleVars(){
@@ -416,18 +526,23 @@ class Tonic{
                         }
                     }
                     $var_name='$'.$vn;
-                    if(self::$escape_tags_in_vars == true && !$prev_tag)
-                        $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
-                    $mod=$this->applyModifiers($var_name,$mod);
+                    $mod=$this->applyModifiers($var_name,$mod,$matches[0][$i]);
                 }else{
                     $var_name='$'.$var_name[0];
-                    if(self::$escape_tags_in_vars == true)
-                        $var_name = 'htmlspecialchars('.$var_name.',ENT_NOQUOTES)';
+                    $mod=$this->applyModifiers($var_name,array(),$matches[0][$i]);
                 }
                 $rep='<?php try{ echo @'.$var_name.'; } catch(\Exception $e) { echo $e->getMessage(); } ?>';
-                $this->content=str_replace($matches[0][$i],$rep,$this->content);
+                $this->content=$this->str_replace_first($matches[0][$i],$rep,$this->content);
             }
         }
+    }
+
+    private function str_replace_first($find, $replace, $string) {
+        $pos = strpos($string,$find);
+        if ($pos !== false) {
+            return substr_replace($string,$replace,$pos,strlen($find));
+        }
+        return "";
     }
 
     private function findVarInString(&$string){
@@ -468,49 +583,136 @@ class Tonic{
         }
     }
 
-    private function handleSwitchs(){
-        $matches=array();
-        preg_match_all('/\{\s*(switch|case)\s*(.+?)\s*\}/',$this->content,$matches);
-        if(!empty($matches)){
-            foreach($matches[2] as $i => $condition){
-                $var_match=array();
-                preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.]+)/',$condition,$var_match);
-                if(!empty($var_match)){
-                    foreach($var_match[1] as $j => $var){
-                        $var_name=explode('.',$var);
-                        if(count($var_name)>1){
-                            $vn=$var_name[0];
-                            unset($var_name[0]);
-                            $mod=array();
-                            foreach($var_name as $k => $index){
-                                $index=explode('->',$index,2);
-                                $obj='';
-                                if(count($index)>1){
-                                    $obj='->'.$index[1];
-                                    $index=$index[0];
-                                }else
-                                    $index=$index[0];
-                                if(substr($index,-1,1)==")"){
-                                    $mod[]=$index.$obj;
-                                }else{
-                                    $vn.="['$index']$obj";
+    private function handleIfMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/','{endif}');
+        if (empty($match)) {
+            return false;
+        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-if\s*=\s*"(.+?)"(.*?)>/','{if $3}<$1$2$4>',$this->content);
+    }
+
+    private function handleLoopMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-loop\s*=\s*"(.+?)".*?>/','{endloop}');
+        if (empty($match)) {
+            return false;
+        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-loop\s*=\s*"(.+?)"(.*?)>/','{loop $3}<$1$2$4>',$this->content);
+    }
+
+    private function matchTags($regex, $append=""){
+        $matches = array();
+        if (!preg_match_all($regex,$this->content,$matches)) {
+            return false;
+        }
+        $offset = 0;
+        $_offset = 0;
+        $ret = array();
+        foreach($matches[0] as $k => $match){
+            $_cont = substr($this->content,$offset);
+            $in_str = false;
+            $escaped = false;
+            $i = strpos($_cont, $match);
+            $tag = $matches[1][$k];
+            $len_match = strlen($match);
+            $offset += $i + $len_match;
+            $str_char = "";
+            $lvl = 1;
+            $prev_char = "";
+            $prev_tag = "";
+            $struct = "";
+            $in_tag = false;
+            $capturing_tag_name = false;
+            $_m = array();
+            foreach($matches as $z => $v){
+                $_m[$z] = $matches[$z][$k];
+            }
+
+            $ret[$k] = array(
+                "match" => $match,
+                "matches" => $_m,
+                "all" => $match,
+                "inner" => "",
+                "starts_at" => $offset - $len_match,
+                "ends_at" => 0,
+            );
+
+            for($j = $i + strlen($match); $j <= strlen($_cont); $j++) {
+                $char = substr($_cont, $j, 1);
+                $prev_char = $char;
+                $struct .= $char;
+                $break = false;
+                switch ($char) {
+                    case "\\":
+                        $escaped = true;
+                        continue;
+                        break;
+                    case "'":
+                    case '"':
+                        if(!$escaped){
+                            if($in_str && $char == $str_char) {
+                                $str_char = $char;
+                            }
+                            $in_str = !$in_str;
+                        }
+                        break;
+                    case ">":
+                        if(!$in_str){
+                            if($in_tag) {
+                                $in_tag = false;
+                                if( $prev_tag == "/".$tag){
+                                    $lvl--;
+                                    if($lvl <= 0) {
+                                        $break=true;
+                                    }
+                                } else if(substr($prev_tag,0,1) == "/"){
+                                    $lvl--;
+                                } else {
+                                    if($prev_char != "/" && !in_array(str_replace("/","",$prev_tag), array('area','base','br','col','command','embed','hr','img','input','keygen','link','meta','param','source','track','wbr'))){
+                                        $lvl++;
+                                    }
+                                }
+                                if($capturing_tag_name) {
+                                    $capturing_tag_name = false;
                                 }
                             }
-                            $var_name='$'.$vn;
-                            $this->applyModifiers($var_name,$mod);
-                        }else{
-                            $var_name='$'.$var_name[0];
                         }
-                        $condition=str_replace(@$var_match[0][$j],$var_name,$condition);
-                    }
+                        break;
+                    case "<":
+                        if($in_tag){
+                            continue;
+                        }
+                        if(!$in_str){
+                            $prev_tag = "";
+                            $in_tag = true;
+                            $capturing_tag_name = true;
+                            continue;
+                        }
+                        break;
+                    case " ":
+                        if($capturing_tag_name){
+                            $capturing_tag_name = false;
+                        }
+                    default:
+                        if($capturing_tag_name){
+                            $prev_tag .= $char;
+                        }
                 }
-                $rep='<?php '.$matches[1][$i].($matches[1][$i]=="switch" ? '(' : ' ').$condition.($matches[1][$i]=="switch" ? ')' : '').($matches[1][$i]=="switch" ? '{' : ':').' ?>';
-                $this->content=str_replace($matches[0][$i],$rep,$this->content);
+                if($escaped) {
+                    $escaped = false;
+                }
+                if($break){
+                    break;
+                }
+            }
+            $ret[$k]["all"] .= $struct;
+            $struct_len = strlen($struct);
+            $ret[$k]["inner"] = substr($struct,0,$struct_len - strlen($tag)-3);
+            $ret[$k]["ends_at"] = $ret[$k]["starts_at"] + $struct_len + $len_match;
+            if($break && !empty($append)){
+                $this->content = substr_replace($this->content,$append,$ret[$k]["ends_at"],0);
             }
         }
-        $this->content=preg_replace('/\{\s*(\/switch|endswitch)\s*\}/','<?php } ?>',$this->content);
-        $this->content=preg_replace('/\{\s*default\s*\}/','<?php default: ?>',$this->content);
-        $this->content=preg_replace('/\{\s*(\/case|endcase)\s*\}/','<?php break; ?>',$this->content);
+        return $ret;
     }
 
     private function handleIfs(){
@@ -778,6 +980,9 @@ class Tonic{
             }
             return urldecode($input);
         });
+        self::extendModifier("addSlashes", function($input){
+            return addslashes($input);
+        });
         self::extendModifier("urlFriendly", function($input) {
             if(!is_string($input)){
                 return $input;
@@ -795,6 +1000,9 @@ class Tonic{
                 throw new \Exception("input must be string");
             }
             return sha1($input);
+        });
+        self::extendModifier("safe", function($input) {
+            return htmlentities($input, ENT_QUOTES);
         });
         self::extendModifier("numberFormat", function($input,$precision = 2) {
             if(!is_numeric($input)){
@@ -855,6 +1063,47 @@ class Tonic{
         });
         self::extendModifier("default", function($input,$default) {
             return (empty($input) ? $default : $input);
+        });
+        self::extendModifier("contextJs", function($input,$in_str) {
+            if( (is_object($input) || is_array($input)) && !$in_str){
+                return json_encode($input);
+            } else if(is_numeric($input) || is_bool($input)){
+                return $input;
+            } else if(is_null($input)) {
+                return "null";
+            } else {
+                if(!$in_str){
+                    return '"' . addslashes($input) .'"';
+                } else {
+                    if(is_object($input) || is_array($input)) {
+                        $input = json_encode($input);
+                    }
+                    return addslashes($input);
+                }
+
+            }
+        });
+        self::extendModifier("contextOutTag", function($input) {
+            if(is_object($input) || is_array($input)){
+                return var_dump($input);
+            } else {
+                return htmlentities($input,ENT_QUOTES);
+            }
+        });
+        self::extendModifier("contextTag", function($input, $in_str) {
+            if((is_object($input) || is_array($input)) && $in_str){
+                return http_build_query($input);
+            } else {
+                if($in_str) {
+                    return urlencode($input);
+                } else {
+                    return htmlentities($input,ENT_QUOTES);
+                }
+
+            }
+        });
+        self::extendModifier("addDoubleQuotes", function($input){
+            return '"' . $input . '"';
         });
         self::extendModifier("ifEmpty", function($input,$true_val, $false_val = null) {
             if(empty($true_val)){

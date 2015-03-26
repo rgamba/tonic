@@ -12,13 +12,22 @@
 			padding: 10px 0;
 			border-bottom: solid 2px #e6e6e6;
 			margin-bottom: 10px;
+			color: {$color};
 		}
 	</style>
 </head>
 <body>
-<h1>Simple variables</h1>
-<br>
-<table>
+<script>
+	if(true) {
+		var obj = {$array};
+		var obj_in_str = "{$array}";
+	}
+</script>
+
+<h1 data-attr="{$ilegal_js}">Simple variables</h1>
+<a href="{$array}">Link with href context</a>
+
+<table {$array.name}='{$array}'>
 	<tr>
 		<td>Name: </td><td>{$user.name}</td>
 	</tr>
@@ -29,16 +38,24 @@
 		<td>Email: </td><td>{$user.email}</td>
 	</tr>
 </table>
+
+<pre>{$js}</pre>
+
 <h2>Context</h2>
+
 <p>Print 'test' GET variable: <b>{$context.get.test.default("test variable not set")}</b></p>
+
 <h3>Easy way to check if variables are set or empty</h3>
+
 {if $context.get.test}
 <p>Context GET variable EXISTS</p>
 {else}
 <p>Context GET variables IS EMPTY</p>
 {endif}
 <h1>Modifiers</h1>
+
 <p>Date management: {$now.toLocal().date("Y-m-d h:i a")}</p>
+
 <table>
 	<tr>
 		<td>Name: </td><td>{$user.name.upper()}</td>
@@ -50,27 +67,43 @@
 		<td>Extra: </td><td>{$user.extra.truncate(20)}</td>
 	</tr>
 </table>
+
 <h2>Modifiers with errors</h2>
+
 <p>Can't sha1() a date object: {$now.sha1()}</p>
 <p>Or when missing a required parameter: {$user_role.truncate()}</p>
 <h2>Custom modifier</h2>
 <p>{$user.name.myModifier("Hello ", " goodbye")}</p>
 
 <h1>Control structures</h1>
+
 <h2>If conditionals</h2>
+
 {if $user_role.upper() eq "ADMIN"}
-    <p>Welcome Administrator</p>
+<p>Welcome Administrator</p>
 {elseif $user_role.upper() eq "MEMBER" or $user_role.upper() eq "TEAM"}
-    <p>Welcome member of the community</p>
+<p>Welcome member of the community</p>
 {else}
-    <p>You are not a registered user</p>
+<p>You are not a registered user</p>
 {endif}
+
+<h3>Which is the same as doing it with macros</h3>
+
+<p tn-if="$user_role.upper() eq 'ADMIN'">Welcome Administrator</p>
+<p tn-if="$user_role.upper() eq 'MEMBER' or $user_role.upper() eq 'TEAM'">Welcome member of the community</p>
+<p tn-if="!$user_role">You are not a registered user</p>
+
 <h2>Loops</h2>
-<ul>
-{for $i, $user in $users}
-	<li>User {$i}: {$user.name.capitalize()}  Email: {$user.email}  Role: {$user.role.if("admin","administrator").upper()}</li>
-{endfor}
+<ul tn-if="$users">
+	<li tn-loop="$i, $user in $users">
+		User: <b>{$user.name.capitalize()}</b><br/>
+		Email: {$user.email}<br>
+		Role: {$user.role.if("admin","administrator").upper()}
+	</li>
 </ul>
+<div tn-if="!$users">
+	<p>There are no users</p>
+</div>
 
 {include  footer.html}
 </body>

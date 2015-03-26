@@ -7,7 +7,7 @@ use Tonic\Tonic;
 
 // Set the local timezone
 Tonic::$local_tz = "America/Mexico_city";
-
+Tonic::$context_aware = true;
 // This variables will be available in all the templates
 Tonic::setGlobals(array(
 	"now" => @date_create(),
@@ -16,7 +16,6 @@ Tonic::setGlobals(array(
 		"get" => $_GET
 	)
 ));
-
 // Create a custom modifier
 Tonic::extendModifier("myModifier",function($input, $prepend, $append = ""){
     // $input will hold the current variable value, it's mandatory that your lambda
@@ -50,7 +49,7 @@ $tpl->user = array(
 // Assign a more complex array
 $tpl->users = array(
 	array(
-		"name" => "rocio lavin",
+		"name" => "rocio 'lavin'",
 		"email" => "rlavin@gmail.com",
 		"role" => "admin"
 	),
@@ -67,6 +66,14 @@ $tpl->users = array(
 );
 
 $tpl->number = 10;
+
+$tpl->js = '{"name" : "Ricardo", "last_name": "Gamba"}';
+$tpl->array = array(
+	"name" => "Ricardo",
+	"last_name" => "Gamba"
+);
+$tpl->js_text = "Ricardo";
+$tpl->ilegal_js = "javascript: alert('Hello');";
 
 // Render the template
 echo $tpl->render();
