@@ -589,28 +589,23 @@ class Tonic{
     }
 
     private function handleIfMacros(){
-        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/');
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/','{endif}');
         if (empty($match)) {
             return false;
         }
-        foreach($match as $m) {
-            $starts = strpos($this->content,$m["all"]);
-            $rep = '{if '.str_replace("'",'"',$m['matches'][2]).'}' . preg_replace('/tn-if\s*=\s*".+?"\s*/','',$m['all']) . '{endif}';
-            $this->content = substr_replace($this->content,$rep, $starts, strlen($m["all"]));
-        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-if\s*=\s*"(.+?)"(.*?)>/','{if $3}<$1$2$4>',$this->content);
     }
 
-    private function matchTags($regex){
-        $cont = $this->content;
+    private function matchTags($regex, $append=""){
         $matches = array();
-        if (!preg_match_all($regex,$cont,$matches)) {
+        if (!preg_match_all($regex,$this->content,$matches)) {
             return false;
         }
         $offset = 0;
         $_offset = 0;
         $ret = array();
         foreach($matches[0] as $k => $match){
-            $_cont = substr($cont,$offset);
+            $_cont = substr($this->content,$offset);
             $in_str = false;
             $escaped = false;
             $i = strpos($_cont, $match);
@@ -637,6 +632,7 @@ class Tonic{
                 "starts_at" => $offset - $len_match,
                 "ends_at" => 0,
             );
+
             for($j = $i + strlen($match); $j <= strlen($_cont); $j++) {
                 $char = substr($_cont, $j, 1);
                 $prev_char = $char;
@@ -707,6 +703,9 @@ class Tonic{
             $struct_len = strlen($struct);
             $ret[$k]["inner"] = substr($struct,0,$struct_len - strlen($tag)-3);
             $ret[$k]["ends_at"] = $ret[$k]["starts_at"] + $struct_len + $len_match;
+            if($break && !empty($append)){
+                $this->content = substr_replace($this->content,$append,$ret[$k]["ends_at"],0);
+            }
         }
         return $ret;
     }

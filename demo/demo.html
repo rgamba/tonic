@@ -85,7 +85,14 @@
 </ul>
 
 <ul tn-if="$users">
-	<li tn-loop="$i, $user in $users">User {$i}: {$user.name}</li>
+	<li tn-if="$user_role eq 'member'">
+		<ul>
+			<li>Uno</li>
+			<li tn-if="$username">Conditional</li>
+			<li>Tres</li>
+		</ul>
+	</li>
+	<li tn-loop="$i, $user in $users">User macro {$i}: {$user.name}</li>
 </ul>
 
 <div tn-if="$user_role.upper() eq 'MEMBER'" style="font-size: 30px">
