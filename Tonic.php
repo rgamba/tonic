@@ -187,18 +187,18 @@ class Tonic{
     }
 
     private function getFromCache(){
-        if($this->enable_content_cache!=true || !file_exists($this->cache_dir.md5("template=".$this->file)))
+        if($this->enable_content_cache!=true || !file_exists($this->cache_dir.sha1($this->file)))
             return false;
-        $file_expiration = filemtime($this->cache_dir.md5("template=".$this->file)) + (int)$this->cache_lifetime;
+        $file_expiration = filemtime($this->cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
         if($file_expiration < time()){
-            unlink($this->cache_dir.md5("template=".$this->file));
+            unlink($this->cache_dir.sha1($this->file));
             return false;
         }
         $this->assignGlobals();
         foreach($this->assigned as $var => $val)
             ${$var}=$val;
         ob_start();
-        include_once($this->cache_dir.md5("template=".$this->file));
+        include_once($this->cache_dir.sha1($this->file));
         $this->output=ob_get_clean();
         return true;
     }
@@ -234,7 +234,7 @@ class Tonic{
     }
 
     private function saveCache(){
-        $file_name=md5("templat=".$this->file);
+        $file_name=sha1($this->file);
         $cache=@fopen($this->cache_dir.$file_name,'w');
         @fwrite($cache,$this->content);
         @fclose($cache);
