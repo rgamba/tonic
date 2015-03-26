@@ -131,6 +131,24 @@ Then you can call it directly from the template
 ```html
 <img src="{$.imagesDir()}/pic.jpg" />
 ```
+## Context awareness
+Tonic prevents you from escaping variables in your app that could led to possible attacks. Each variable that's going to be displayed to the user should be carefully escaped, and it sould be done acoardingly to it's context.
+For example, a variable in a href attr of a link should be escaped in a different way from some variable in a javascript tag or a <h1> tag.
+The good news is that tonic does all this work for you.
+```php
+$tonic->assign("array",array("Name" => "Ricardo", "LastName", "Gamba"));
+$tonic->assign("ilegal_js","javascript: alert('Hello');");
+```
+And the HTML
+```html
+<a href="{$ilegal_js}">Click me</a>
+<!-- Will render: <a href="javascript%3A+alert%28%27Hello%27%29%3B">Click me</a> -->
+<p>The ilegal js is: {$ilegal_js}</p>
+<!-- Will render: <p> The ilegal js is: javascript: alert(&#039;Hello&#039;);</p> -->
+<a href="?{$array}">Valid link generated</a>
+<!-- Will render: <a href="?Name=Ricardo&LastName=Gamba">Valid link generated</a> -->
+<p> We can also ignore the context awareness: {$ilegal_js.ignoreContext()}</p>
+```
 ## Include templates
 You can include a template inside another template
 ```html
@@ -180,7 +198,25 @@ Or if the array key is needed
 {endloop}
 </ul>
 ```
+### Working with macros
+Both if structures and loop constructs can be written in a more HTML-friendly way so your code can be more readable. Here's an example:
+```html
+<ul tn-if="$users">
+    <li tn-loop="$user in $users">Hello {$user}</li>
+</ul>
+```
+Which is exactly the same as:
+```html
+{if $users}
+<ul>
+    {loop $user in $users}
+    <li>Hello {$user}</li>
+    {endloop}
+</ul>
+{endif}
+```
 ## Changelog
+* 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
 * 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.

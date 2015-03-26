@@ -1,6 +1,6 @@
 <?php
 /**
-* tonic v2.2
+* tonic v3.0
 *
 * Lightweight PHP templating engine
 *
@@ -11,12 +11,17 @@ namespace Tonic;
 
 class Tonic{
     /**
-    * If set to true, will try to encode all output tags with
-    * htmlspecialchars()
+    * Enable context awareness
     */
-    public static $escape_tags_in_vars = false;
-
     public static $context_aware = true;
+    /**
+    * Local timezone (to use with toLocal() modifier)
+    */
+    public static $local_tz = 'GMT';
+    /**
+    * Include path
+    */
+    public static $root='';
     /**
     * Enable template caching
     */
@@ -30,17 +35,7 @@ class Tonic{
     */
     public $cache_lifetime = 86400;
     /**
-    * Local timezone (to use with toLocal() modifier)
-    */
-    public static $local_tz = 'GMT';
-    /**
-    * Include path
-    * @var string
-    */
-    public static $root='';
-    /**
     * Default extension for includes
-    * @var string
     */
     public $default_extension='.html';
 
@@ -179,10 +174,10 @@ class Tonic{
                 $this->assignGlobals();
                 $this->handleIncludes();
                 $this->handleIfMacros();
+                $this->handleLoopMacros();
                 $this->handleLoops();
                 $this->handleIfs();
                 $this->handleVars();
-                $this->handleSwitchs();
                 $this->compile();
             }
         }else{
@@ -596,6 +591,14 @@ class Tonic{
         $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-if\s*=\s*"(.+?)"(.*?)>/','{if $3}<$1$2$4>',$this->content);
     }
 
+    private function handleLoopMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-loop\s*=\s*"(.+?)".*?>/','{endloop}');
+        if (empty($match)) {
+            return false;
+        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-loop\s*=\s*"(.+?)"(.*?)>/','{loop $3}<$1$2$4>',$this->content);
+    }
+
     private function matchTags($regex, $append=""){
         $matches = array();
         if (!preg_match_all($regex,$this->content,$matches)) {
@@ -656,7 +659,7 @@ class Tonic{
                         if(!$in_str){
                             if($in_tag) {
                                 $in_tag = false;
-                                if( $prev_tag == "/".$tag ){
+                                if( $prev_tag == "/".$tag){
                                     $lvl--;
                                     if($lvl <= 0) {
                                         $break=true;
@@ -664,7 +667,9 @@ class Tonic{
                                 } else if(substr($prev_tag,0,1) == "/"){
                                     $lvl--;
                                 } else {
-                                    $lvl++;
+                                    if($prev_char != "/" && !in_array(str_replace("/","",$prev_tag), array('area','base','br','col','command','embed','hr','img','input','keygen','link','meta','param','source','track','wbr'))){
+                                        $lvl++;
+                                    }
                                 }
                                 if($capturing_tag_name) {
                                     $capturing_tag_name = false;
@@ -708,51 +713,6 @@ class Tonic{
             }
         }
         return $ret;
-    }
-
-    private function handleSwitchs(){
-        $matches=array();
-        preg_match_all('/\{\s*(switch|case)\s*(.+?)\s*\}/',$this->content,$matches);
-        if(!empty($matches)){
-            foreach($matches[2] as $i => $condition){
-                $var_match=array();
-                preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.]+)/',$condition,$var_match);
-                if(!empty($var_match)){
-                    foreach($var_match[1] as $j => $var){
-                        $var_name=explode('.',$var);
-                        if(count($var_name)>1){
-                            $vn=$var_name[0];
-                            unset($var_name[0]);
-                            $mod=array();
-                            foreach($var_name as $k => $index){
-                                $index=explode('->',$index,2);
-                                $obj='';
-                                if(count($index)>1){
-                                    $obj='->'.$index[1];
-                                    $index=$index[0];
-                                }else
-                                    $index=$index[0];
-                                if(substr($index,-1,1)==")"){
-                                    $mod[]=$index.$obj;
-                                }else{
-                                    $vn.="['$index']$obj";
-                                }
-                            }
-                            $var_name='$'.$vn;
-                            $this->applyModifiers($var_name,$mod);
-                        }else{
-                            $var_name='$'.$var_name[0];
-                        }
-                        $condition=str_replace(@$var_match[0][$j],$var_name,$condition);
-                    }
-                }
-                $rep='<?php '.$matches[1][$i].($matches[1][$i]=="switch" ? '(' : ' ').$condition.($matches[1][$i]=="switch" ? ')' : '').($matches[1][$i]=="switch" ? '{' : ':').' ?>';
-                $this->content=str_replace($matches[0][$i],$rep,$this->content);
-            }
-        }
-        $this->content=preg_replace('/\{\s*(\/switch|endswitch)\s*\}/','<?php } ?>',$this->content);
-        $this->content=preg_replace('/\{\s*default\s*\}/','<?php default: ?>',$this->content);
-        $this->content=preg_replace('/\{\s*(\/case|endcase)\s*\}/','<?php break; ?>',$this->content);
     }
 
     private function handleIfs(){

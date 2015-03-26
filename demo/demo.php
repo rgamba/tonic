@@ -73,6 +73,7 @@ $tpl->array = array(
 	"last_name" => "Gamba"
 );
 $tpl->js_text = "Ricardo";
+$tpl->ilegal_js = "javascript: alert('Hello');";
 
 // Render the template
 echo $tpl->render();
