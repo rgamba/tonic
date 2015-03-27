@@ -30,7 +30,10 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 </body>
 ```
 ## Installation
-Tonic is just a single file so just download the source and include it wherever you want.
+Install using composer
+```
+$ composer require rgamba/tonic
+```
 ## Caching
 All tonic templates are compiled back to native PHP code. It's highly recommended that you use the caching functionality so that the same template doesn't need to be compiled over and over again increasing the CPU usage on server side.
 ```php
