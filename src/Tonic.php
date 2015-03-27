@@ -431,7 +431,7 @@ class Tonic{
         }
         $escaped = false;
         $capturing_tag_name = false;
-
+        $char = "";
         for($j = 0; $j <= $i; $j++){
             $prev_char = $char;
             $char = substr($cont, $j, 1);
