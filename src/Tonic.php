@@ -167,7 +167,7 @@ class Tonic{
     */
     public function render($replace_cache=false){
         if($replace_cache)
-            if(file_exists($this->cache_dir.sha1($this->file))
+            if(file_exists($this->cache_dir.sha1($this->file)))
                 unlink($this->cache_dir.sha1($this->file));
         if(!$this->is_php){
             if(!$this->getFromCache()){
