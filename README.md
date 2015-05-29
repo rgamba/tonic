@@ -225,7 +225,7 @@ Tonic has localization support. Alter the calling as followed:
 
 ```php
 use Tonic\Tonic;
-$tpl = new Tonic("demo.html“, "localized.xml“);
+$tpl = new Tonic("demo.html", "localized.xml");
 $tpl->user_role = "member";
 echo $tpl->render();
 ```
@@ -233,7 +233,7 @@ echo $tpl->render();
 The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be valid XML. Here’s its structure:
 
 ```xml
-<?xml version=„1.0“ encoding=„UTF-8“?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Strings>
 	<string>
 		<key>TEXT</key>
