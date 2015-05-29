@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Strings>
+	<string>
+		<key>TEXT</key>
+		<value>Tonic will automatically load the specified localized text from the specified language file.</value>
+	</string>
+</Strings>

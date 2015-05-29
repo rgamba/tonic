@@ -38,8 +38,13 @@ class Tonic{
     * Default extension for includes
     */
     public $default_extension='.html';
+    /**
+	* Localized array
+	*/
+	public $localized = array();
 
     private $file;
+    private $languageFile;
     private $assigned=array();
     private $output="";
     private $source;
@@ -54,11 +59,15 @@ class Tonic{
     * Object constructor
     * @param $file template file to load
     */
-    public function __construct($file=NULL){
+    public function __construct($file=NULL, $language=NULL){
         self::initModifiers();
         if(!empty($file)){
             $this->file=$file;
             $this->load();
+        }
+        if(!empty($file) AND file_exists($language)){
+	        $this->languageFile=$language;
+	        $this->loadLanguage();
         }
     }
 
@@ -1158,5 +1167,15 @@ class Tonic{
             return $ret;
         });
 
+    }
+    
+    public function loadLanguage(){
+		$XMLFile = simplexml_load_file($this->languageFile);
+		$result = $XMLFile->xpath("/Strings/string");
+		foreach($result as $value){
+			$this->localized[(string)$value->key] = (string)$value->value;
+		}
+		$this->assign("localized", $this->localized);
+		return true;
     }
 }

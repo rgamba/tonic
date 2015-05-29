@@ -27,7 +27,7 @@ Tonic::extendModifier("myModifier",function($input, $prepend, $append = ""){
     return $prepend . $input . $append;
 });
 
-$tpl = new Tonic("demo.html");
+$tpl = new Tonic("demo.html", "EN.xml");
 
 // Uncomment the following 2 lines to enable caching
 //$tpl->enable_content_cache = true;

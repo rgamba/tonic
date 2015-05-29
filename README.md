@@ -220,7 +220,32 @@ Which is exactly the same as:
 </ul>
 {endif}
 ```
+## Localizing
+Tonic has localization support. Alter the calling as followed:
+
+```php
+use Tonic\Tonic;
+$tpl = new Tonic("demo.html“, "localized.xml“);
+$tpl->user_role = "member";
+echo $tpl->render();
+```
+
+The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be valid XML. Here’s its structure:
+
+```xml
+<?xml version=„1.0“ encoding=„UTF-8“?>
+<Strings>
+	<string>
+		<key>TEXT</key>
+		<value>Tonic will automatically load the specified localized text from the specified language file.</value>
+	</string>
+</Strings>
+```
+
+To access a localized string in you html use ```{$localized.KEY}``` while ```KEY``` is the key you used in the XML-Document.
+
 ## Changelog
+* XX-XX-XXX - X.X.X - Added localization support
 * 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
