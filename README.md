@@ -230,6 +230,12 @@ $tpl->user_role = "member";
 echo $tpl->render();
 ```
 
+If you want to use multiple localization files, use an array as the second construct parameter like so:
+
+```php
+$tpl = new Tonic("demo.html", array("localized.xml", "anotherFile.xml");
+```
+
 The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be valid XML. Here’s its structure:
 
 ```xml
@@ -242,11 +248,12 @@ The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be v
 </Strings>
 ```
 
-To access a localized string in you html use ```{$localized.KEY}``` while ```KEY``` is the key you used in the XML-Document.
+To access a localized string in you html use ```{$localized.FILENAME.KEY}``` while ```KEY``` is the key you used in the XML-Document and ```FILENAME```is the name of the localization file without the extension (i.e. ```EN```). In this example that would be ```{$localized.EN.TEXT}```.
 
 ## Changelog
-* XX-XX-XXX - X.X.X - Added localization support
-* 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
+* XX-XX-XXXX - X.X.X - Added support for multiple localization files
+* XX-XX-XXXX - X.X.X - Added localization support
+* 25-03-2015 - 3.0.0 - Added Context Awareness and Macro Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
 * 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.

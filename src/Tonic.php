@@ -6,6 +6,9 @@
 *
 * @author Ricardo Gamba <rgamba@gmail.com>
 * @license BSD 3-Clause License
+*
+* Localization Support by NitricWare (Kurt Höblinger)
+*
 */
 namespace Tonic;
 
@@ -44,7 +47,7 @@ class Tonic{
 	public $localized = array();
 
     private $file;
-    private $languageFile;
+    private $languageFiles=array();
     private $assigned=array();
     private $output="";
     private $source;
@@ -65,8 +68,17 @@ class Tonic{
             $this->file=$file;
             $this->load();
         }
-        if(!empty($file) AND file_exists($language)){
-	        $this->languageFile=$language;
+        if(!empty($languages)){
+	        if (is_array($languages)){
+		    	foreach ($languages as $language){
+			    	if (file_exists($language)){
+			        	$this->languageFiles[] = $language;
+		        	}
+		    	}
+	        } else {
+		       $this->languageFiles[] = $languages; 
+	        }
+	        
 	        $this->loadLanguage();
         }
     }
@@ -1170,10 +1182,14 @@ class Tonic{
     }
     
     public function loadLanguage(){
-		$XMLFile = simplexml_load_file($this->languageFile);
-		$result = $XMLFile->xpath("/Strings/string");
-		foreach($result as $value){
-			$this->localized[(string)$value->key] = (string)$value->value;
+		foreach ($this->languageFiles as $languageFile){
+			$pathInfo = pathinfo($languageFile);
+			$fileName = $pathInfo["filename"];
+			$XMLFile = simplexml_load_file($languageFile);
+			$result = $XMLFile->xpath("/Strings/string");
+			foreach($result as $value){
+				$this->localized[$fileName][(string)$value->key] = (string)$value->value;
+			}
 		}
 		$this->assign("localized", $this->localized);
 		return true;
