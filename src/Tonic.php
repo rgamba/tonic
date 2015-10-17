@@ -62,7 +62,7 @@ class Tonic{
     * Object constructor
     * @param $file template file to load
     */
-    public function __construct($file=NULL, $language=NULL){
+    public function __construct($file=NULL, $languages=NULL){
         self::initModifiers();
         if(!empty($file)){
             $this->file=$file;

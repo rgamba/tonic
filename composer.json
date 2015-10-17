@@ -11,6 +11,12 @@
             "email": "rgamba@gmail.com",
             "homepage": "http://github.com/rgamba",
             "role": "Lead"
+        },
+        {
+            "name": "Kurt Höblinger",
+            "email": "office@nitricware.com",
+            "homepage": "http://nitricware.com",
+            "role": "Contributor"
         }
     ],
     "require": {

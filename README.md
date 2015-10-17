@@ -248,7 +248,7 @@ The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be v
 </Strings>
 ```
 
-To access a localized string in you html use ```{$localized.FILENAME.KEY}``` while ```KEY``` is the key you used in the XML-Document and ```FILENAME```is the name of the localization file without the extension (i.e. ```EN```). In this example that would be ```{$localized.EN.TEXT}```.
+To access a localized string in you template use ```{$localized.FILENAME.KEY}``` while ```KEY``` is the key you used in the XML-Document and ```FILENAME```is the name of the localization file without the extension (i.e. ```EN```). In this example that would be ```{$localized.EN.TEXT}```.
 
 ## Changelog
 * XX-XX-XXXX - X.X.X - Added support for multiple localization files
