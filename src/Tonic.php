@@ -784,8 +784,9 @@ class Tonic{
         preg_match_all('/\{\s*(loop|for)\s*(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[2] as $i => $loop){
+                $loop = str_replace(' in ', '**in**', $loop);
                 $loop = $this->removeWhiteSpaces($loop);
-                $loop_det=explode('in',$loop);
+                $loop_det=explode('**in**',$loop);
                 $loop_name=$loop_det[1];
                 unset($loop_det[1]);
                 $loop_name=explode('.',$loop_name);
