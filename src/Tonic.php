@@ -494,12 +494,44 @@ class Tonic{
         );
     }
 
+    private function escapeCharsInString($str, $escapeChar, $repChar, $strDelimiter='"') {
+        $ret = "";
+        $inQuote = false;
+        $escaped = false;
+        for($i = 0; $i <= strlen($str); $i++) {
+            $char = substr($str, $i, 1);
+            switch($char) {
+                case '\\':
+                    $escaped = true;
+                    $ret .= $char;
+                    break;
+                case $strDelimiter:
+                    if(!$escaped) {
+                        $inQuote = !$inQuote;
+                    }
+                    $ret .= $char;
+                    break;
+                default:
+                    if($inQuote && $char == $escapeChar) {
+                        $ret .= $repChar;
+                    } else {
+                        $ret .= $char;
+                    }
+            }
+            if($escaped) {
+                $escaped = false;
+            }
+        }
+        return $ret;
+    }
+
     private function handleVars(){
         $matches=array();
         preg_match_all('/\{\s*\$(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[1] as $i => $var_name){
                 $prev_tag=strpos($var_name,'preventTag') === false ? false : true;
+                $var_name = $this->escapeCharsInString($var_name, '.', '**dot**');
                 $var_name=explode('.',$var_name);
                 if(count($var_name)>1){
                     $vn=$var_name[0];
@@ -509,6 +541,7 @@ class Tonic{
                     unset($var_name[0]);
                     $mod=array();
                     foreach($var_name as $j => $index){
+                        $index = str_replace('**dot**', '.', $index);
                         $index=explode('->',$index,2);
                         $obj='';
                         if(count($index)>1){
