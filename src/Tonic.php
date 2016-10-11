@@ -49,6 +49,9 @@ class Tonic{
     private $cur_context = null;
     private static $modifiers = null;
     private static $globals=array();
+    private $blocks = array();
+    private $blocks_override = array();
+    private $base = null;
 
     /**
     * Object constructor
@@ -172,6 +175,9 @@ class Tonic{
         if(!$this->is_php){
             if(!$this->getFromCache()){
                 $this->assignGlobals();
+                $this->handleExtends();
+                $this->handleBlockMacros();
+                $this->handleBlocks();
                 $this->handleIncludes();
                 $this->handleIfMacros();
                 $this->handleLoopMacros();
@@ -183,7 +189,19 @@ class Tonic{
         }else{
             $this->renderPhp();
         }
+        if($this->base != null) {
+            // This template has inheritance
+            $parent = new Tonic($this->base);
+            $parent->setContext($this->assigned);
+            $parent->overrideBlocks($this->blocks);
+            return $parent->render();
+        }
+
         return $this->output;
+    }
+
+    public function overrideBlocks($blocks) {
+        $this->blocks_override = $blocks;
     }
 
     private function getFromCache(){
@@ -632,6 +650,14 @@ class Tonic{
         $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-loop\s*=\s*"(.+?)"(.*?)>/','{loop $3}<$1$2$4>',$this->content);
     }
 
+    private function handleBlockMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-block\s*=\s*"(.+?)".*?>/','{endblock}');
+        if (empty($match)) {
+            return false;
+        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-block\s*=\s*"(.+?)"(.*?)>/','{block $3}<$1$2$4>',$this->content);
+    }
+
     private function matchTags($regex, $append=""){
         $matches = array();
         if (!preg_match_all($regex,$this->content,$matches)) {
@@ -748,6 +774,29 @@ class Tonic{
         return $ret;
     }
 
+    private function handleExtends(){
+        $matches=array();
+        preg_match_all('/\{\s*(extends )\s*(.+?)\s*\}/',$this->content,$matches);
+        $base = $matches[2];
+        if(count($base) <= 0)
+            return;
+        if(count($base)>1)
+            throw new \Exception("Each template can extend 1 parent at the most");
+        $base = $base[0];
+        if(substr($base, 0, 1) == '"') {
+            $base = substr($base, 1);
+        }
+        if(substr($base, -1) == '"') {
+            $base = substr($base, 0, -1);
+        }
+        $base = self::$root . $base;
+        if(!file_exists($base)) {
+            throw new \Exception("Unable to extend base template ". $base);
+        }
+        $this->base = $base;
+        $this->content = str_replace($matches[0][0], "", $this->content);
+    }
+
     private function handleIfs(){
         $matches=array();
         preg_match_all('/\{\s*(if|elseif)\s*(.+?)\s*\}/',$this->content,$matches);
@@ -810,6 +859,31 @@ class Tonic{
         $this->content=preg_replace('/\{\s*(\/if|endif)\s*\}/','<?php endif; ?>',$this->content);
         $this->content=preg_replace('/\{\s*else\s*\}/','<?php else: ?>',$this->content);
 
+    }
+
+    private function handleBlocks(){
+        $matches=array();
+        preg_match_all('/\{\s*(block)\s*(.+?)\s*\}/',$this->content,$matches);
+        $blocks = $matches[2];
+        if(count($blocks) <= 0)
+            return;
+        foreach($blocks as $i => $block) {
+            $block = trim($block);
+            $rv = '<?php ob_start(array(&$this, "ob_'.$block.'")); ?>';
+            $this->content = str_replace($matches[0][$i], $rv, $this->content);
+        }
+        $this->content=preg_replace('/\{\s*endblock\s*\}/','<?php ob_end_flush(); ?>',$this->content);
+    }
+
+    public function __call($name, $args) {
+        $n = explode('_', $name);
+        if($n[0] == 'ob') {
+            $this->blocks[$n[1]] = $args[0];
+        }
+        if($this->base != null)
+            return "";
+        
+        return empty($this->blocks_override[$n[1]]) ? $args[0] : $this->blocks_override[$n[1]];
     }
 
     private function handleLoops(){
