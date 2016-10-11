@@ -25,7 +25,7 @@ class Tonic{
     /**
     * Enable template caching
     */
-    public $enable_content_cache = false;
+    public static $enable_content_cache = false;
     /**
     * Caching directory (must have write permissions)
     */
@@ -205,7 +205,7 @@ class Tonic{
     }
 
     private function getFromCache(){
-        if($this->enable_content_cache!=true || !file_exists($this->cache_dir.sha1($this->file)))
+        if(self::$enable_content_cache!=true || !file_exists($this->cache_dir.sha1($this->file)))
             return false;
         $file_expiration = filemtime($this->cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
         if($file_expiration < time()){
@@ -240,7 +240,7 @@ class Tonic{
         foreach($this->assigned as $var => $val){
             ${$var}=$val;
         }
-        if($this->enable_content_cache==true){
+        if(self::$enable_content_cache==true){
             $this->saveCache();
         }
         ob_start();

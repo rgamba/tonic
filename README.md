@@ -220,6 +220,71 @@ Which is exactly the same as:
 </ul>
 {endif}
 ```
+
+### Template inheritance
+Tonic supports single template inheritance. The idea behind this is to keep things nice and simple. Multiple inheritance can lead to complicated views difficult to maintain.
+
+In Tonic, template inheritance is based on `blocks`. Suppose we have the following base template:
+
+base.html
+```html
+<html>
+<head>
+<title>Tonic</title>
+</head>
+<body>
+<section tn-block="header">
+    <h1>Default welcome message!</h1>
+</section>
+<section>
+    <div tn-block="content">
+        <p>This is the default content.</p>
+    </div>
+</section>
+<section tn-block="footer">Tonic 2016</section>
+</body>
+```
+
+Then you have several partial templates or views and you would like to reuse the main `base.html` as a "skeleton".
+
+inner.html
+```html
+{ extends base.html }
+<section tn-block="header" class="myheader">
+    <h1>Welcome to my inner page!</h1>
+</section>
+<p>This content WON´T be rendered at all!</p>
+<div tn-block="content">
+    <p>This is the content of my inner view.
+</div>
+```
+
+As a result we will have the following view:
+```html
+<html>
+<head>
+<title>Tonic</title>
+</head>
+<body>
+<section class="myheader">
+    <h1>Welcome to my inner page!</h1>
+</section>
+<section>
+    <div>
+        <p>This is the content of my inner view.
+    </div>
+</section>
+<section>Tonic 2016</section>
+</body>
+```
+
+Important notes on template inheritance:
+* You can only extend 1 template.
+* All the content inside `inner.html` that is not inside a block definition won´t be rendered at all.
+* Blocks can be defined by marcos (as the example) or by surrounding the code with `{ block myblock }{ endblock }` tags.
+* The template to be extended must be available inside the templates directory.
+
+
 ## Changelog
 * 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
