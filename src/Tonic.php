@@ -29,7 +29,7 @@ class Tonic{
     /**
     * Caching directory (must have write permissions)
     */
-    public $cache_dir = "cache/";
+    public static $cache_dir = "cache/";
     /**
     * Cache files lifetime
     */
@@ -170,8 +170,8 @@ class Tonic{
     */
     public function render($replace_cache=false){
         if($replace_cache)
-            if(file_exists($this->cache_dir.sha1($this->file)))
-                unlink($this->cache_dir.sha1($this->file));
+            if(file_exists(self::$cache_dir.sha1($this->file)))
+                unlink(self::$cache_dir.sha1($this->file));
         if(!$this->is_php){
             if(!$this->getFromCache()){
                 $this->assignGlobals();
@@ -200,23 +200,43 @@ class Tonic{
         return $this->output;
     }
 
+    /**
+    * For internal use only for template inheritance. 
+    */
     public function overrideBlocks($blocks) {
         $this->blocks_override = $blocks;
     }
 
+    /**
+    * Backwards compatibility for cache.
+    */
+    public function __get($var) {
+        switch($var) {
+            case 'enable_content_cache':
+                // Backwards compatibility support
+                return self::$enable_content_cache;
+                break;
+            case 'cache_dir':
+                return self::$cache_dir;
+                break;
+            default:
+                throw new \Exception("Tried to access invalid property " . $var);
+        }
+    }
+
     private function getFromCache(){
-        if(self::$enable_content_cache!=true || !file_exists($this->cache_dir.sha1($this->file)))
+        if(self::$enable_content_cache!=true || !file_exists(self::$cache_dir.sha1($this->file)))
             return false;
-        $file_expiration = filemtime($this->cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
+        $file_expiration = filemtime(self::$cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
         if($file_expiration < time()){
-            unlink($this->cache_dir.sha1($this->file));
+            unlink(self::$cache_dir.sha1($this->file));
             return false;
         }
         $this->assignGlobals();
         foreach($this->assigned as $var => $val)
             ${$var}=$val;
         ob_start();
-        include_once($this->cache_dir.sha1($this->file));
+        include_once(self::$cache_dir.sha1($this->file));
         $this->output=ob_get_clean();
         return true;
     }
@@ -253,7 +273,7 @@ class Tonic{
 
     private function saveCache(){
         $file_name=sha1($this->file);
-        $cache=@fopen($this->cache_dir.$file_name,'w');
+        $cache=@fopen(self::$cache_dir.$file_name,'w');
         @fwrite($cache,$this->content);
         @fclose($cache);
     }
