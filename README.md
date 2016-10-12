@@ -221,7 +221,7 @@ Which is exactly the same as:
 {endif}
 ```
 
-### Template inheritance
+## Template inheritance
 Tonic supports single template inheritance. The idea behind this is to keep things nice and simple. Multiple inheritance can lead to complicated views difficult to maintain.
 
 In Tonic, template inheritance is based on `blocks`. Suppose we have the following base template:
@@ -260,20 +260,6 @@ Each block is defined by the tag `{block name}{endblock}` and/or by the html att
 </div>
 ```
 
-There are several keys here:
-* The `{ extend }` tag. Which first and only argument should be the template file relative to `Tonic::$root` (by default `./`).
-* The `tn-block="header"` html attribute that defines the block and is enclosed by the closing matching tag of the HTML element. 
-* All the blocks found in the child template (inner.html) will effectively replace the matching blocks on the parent template (base.html). If there is a block in the child template that is not defined in the parent template, **that block won´t be rendered at all**.
-* Block names must only by alphanumerical with and must not contain `$` or any special characters or spaces.
-* The parent template (base.html) inherits the context (scope, variables) of the child template.
-
-**NOTE** It is also possible to define blocks using the `{block header}{endblock}` notation. We prefer to use HTML attributes as it is cleaner. 
-Example:
-```{block myBlock}<div><h1>Welcome</h1></div>{endblock}```
-is exactly the same as:
-```<div tn-block="myBlock"><h1>Welcome</h1></div>```
-
-
 As a result we will have the following view:
 ```html
 <html>
@@ -293,11 +279,23 @@ As a result we will have the following view:
 </body>
 ```
 
-Important notes on template inheritance:
+There are several keys here:
+* The `{ extend }` tag. Which first and only argument should be the template file relative to `Tonic::$root` (by default `./`).
+* The `tn-block="header"` html attribute that defines the block and is enclosed by the closing matching tag of the HTML element. 
+* All the blocks found in the child template (inner.html) will effectively replace the matching blocks on the parent template (base.html). If there is a block in the child template that is not defined in the parent template, **that block won´t be rendered at all**.
+* Block names must only by alphanumerical with and must not contain `$` or any special characters or spaces.
+* The parent template (base.html) inherits the context (scope, variables) of the child template.
 * You can only extend 1 template.
-* All the content inside `inner.html` that is not inside a block definition won´t be rendered at all.
-* Blocks can be defined by marcos (as the example) or by surrounding the code with `{ block myblock }{ endblock }` tags.
-* The template to be extended must be available inside the templates directory.
+
+**NOTE** It is also possible to define blocks using the `{block header}{endblock}` notation. We prefer to use HTML attributes as it is cleaner. 
+Example:
+```html
+{block myBlock}<div><h1>Welcome</h1></div>{endblock}
+```
+is exactly the same as:
+```html
+<div tn-block="myBlock"><h1>Welcome</h1></div>
+```
 
 
 ## Changelog
