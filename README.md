@@ -226,7 +226,7 @@ Tonic supports single template inheritance. The idea behind this is to keep thin
 
 In Tonic, template inheritance is based on `blocks`. Suppose we have the following base template:
 
-base.html
+**base.html**
 ```html
 <html>
 <head>
@@ -245,9 +245,10 @@ base.html
 </body>
 ```
 
-Then you have several partial templates or views and you would like to reuse the main `base.html` as a "skeleton".
+Then you have several partial templates or views and you would like to reuse the main `base.html` as a "skeleton". To do that, we work with `blocks`.
+Each block is defined by the tag `{block name}{endblock}` and/or by the html attribute `tn-block="name"` which effectively encloses the HTML element with the attibute as the block with the name __name__.
 
-inner.html
+**inner.html**
 ```html
 { extends base.html }
 <section tn-block="header" class="myheader">
@@ -258,6 +259,20 @@ inner.html
     <p>This is the content of my inner view.
 </div>
 ```
+
+There are several keys here:
+* The `{ extend }` tag. Which first and only argument should be the template file relative to `Tonic::$root` (by default `./`).
+* The `tn-block="header"` html attribute that defines the block and is enclosed by the closing matching tag of the HTML element. 
+* All the blocks found in the child template (inner.html) will effectively replace the matching blocks on the parent template (base.html). If there is a block in the child template that is not defined in the parent template, **that block won´t be rendered at all**.
+* Block names must only by alphanumerical with and must not contain `$` or any special characters or spaces.
+* The parent template (base.html) inherits the context (scope, variables) of the child template.
+
+**NOTE** It is also possible to define blocks using the `{block header}{endblock}` notation. We prefer to use HTML attributes as it is cleaner. 
+Example:
+```{block myBlock}<div><h1>Welcome</h1></div>{endblock}```
+is exactly the same as:
+```<div tn-block="myBlock"><h1>Welcome</h1></div>```
+
 
 As a result we will have the following view:
 ```html
@@ -286,6 +301,7 @@ Important notes on template inheritance:
 
 
 ## Changelog
+* 11-10-2016 - 3.1.0 - Added support for template inheritance
 * 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
