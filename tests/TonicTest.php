@@ -1,9 +1,8 @@
 <?php
-use PHPUnit\Framework\TestCase;
 require_once("src/Tonic.php");
 use Tonic\Tonic;
 
-class TonicTest extends TestCase {
+class TonicTest extends \PHPUnit_Framework_TestCase {
     private $vars = array(
         'name' => 'Ricardo',
         'last_name' => 'Gamba',
