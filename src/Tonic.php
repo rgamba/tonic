@@ -938,7 +938,7 @@ class Tonic{
                 }
 
                 foreach($loop_det as $j => $_val){
-                    list($k,$v)=explode(',',$_val);
+                    @list($k,$v)=explode(',',$_val);
                     if($k=="key"){
                         $key=$v;
                         continue;
