@@ -1,4 +1,7 @@
 # tonic
+
+[![Build Status](https://travis-ci.org/rgamba/tonic.svg?branch=master)](https://travis-ci.org/rgamba/tonic)
+
 Super fast and powerful template engine.
 
 ## Usage

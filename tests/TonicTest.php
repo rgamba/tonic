@@ -128,4 +128,20 @@ class TonicTest extends TestCase {
             $this->assertEquals($t[1], $template->render());
         }
     }
+
+    public function testContextAwareness() {
+        $tpl = array(
+            array('<h1 data-attr="{$inline_js}">Test</h1>', '<h1 data-attr="javascript%3A+alert%28%27Hello%27%29%3B">Test</h1>'),
+            array('<pre>{$inline_js}</pre>', '<pre>javascript: alert(&#039;Hello&#039;);</pre>'),
+            array('<a href="{$inline_js}">Click</a>', '<a href="javascript%3A+alert%28%27Hello%27%29%3B">Click</a>'),
+            array('<a href="?{$array}">Link</a>', '<a href="?one=first+item+string&two=2">Link</a>'),
+            array('<p>{$inline_js.ignoreContext()}</p>', '<p>javascript: alert(\'Hello\');</p>')
+        );
+
+        foreach($tpl as $i => $t) {
+            $template = new Tonic();
+            $template->loadFromString($t[0])->setContext($this->vars);
+            $this->assertEquals($t[1], $template->render());
+        }
+    }
 }
