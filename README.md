@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/rgamba/tonic.svg?branch=master)](https://travis-ci.org/rgamba/tonic)
 
-Super fast and powerful template engine.
+Super fast and powerful template engine. Pure PHP, zero dependencies.
 
 ## Usage
 Using Tonic is pretty straight forward.
