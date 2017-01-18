@@ -77,36 +77,36 @@ Which will render `$my_date` to the timezone configured in ` Tonic::$local_tz`
 
 Name | Description
 --- | ---
-upper() | Uppercase
-lower() | Lowercase
-capitalize() | Capitalize words (ucwords)
-abs() | Absolute value
-truncate(len) | Truncate and add "..." if string is larger than "len"
-count() | Alias to count()
-length() | alias to count()
-date(format) | Format date like date(format)
-nl2br() | Alias to nl2br
-stripSlashes() | Alias to stripSlashes()
-sum(value) | Sums value to the current variable
-substract(value) | Substracts value to the current variable
-multiply(value) | Multiply values
-divide(value) | Divide values
-addSlashes() | Alias of addSlashes()
-encodeTags() | Encode the htmls tags inside the variable
-decodeTags() | Decode the tags inside the variable
-stripTags() | Alias of strip_tags()
-urldecode() | Alias of urldecode()
-trim() | Alias of trim()
-sha1() | Returns the sha1() of the variable
-numberFormat(decimals) | Alias of number_format()
-lastIndex() | Returns the last array's index of the variable
-lastValue() | Returns the array's last element
-jsonEncode() | Alias of json_encode()
-replace(find,replace) | Alias of str_replace()
-default(value) | In case variable is empty, assign it value
-ifEmpty(value [,else_value]) | If variable is empty assign it value, else if else_value is set, set it to else_value
-if(value, then_value [,else_value [,comparisson_operator]] ) | Conditionally set the variable's value. All arguments can be variables
-preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
+`upper()` | Uppercase
+`lower()` | Lowercase
+`capitalize()` | Capitalize words (ucwords)
+`abs()` | Absolute value
+`truncate(len)` | Truncate and add "..." if string is larger than "len"
+`count()` | Alias to count()
+`length()` | alias to count()
+`date(format)` | Format date like date(format)
+`nl2br()` | Alias to nl2br
+`stripSlashes()` | Alias to stripSlashes()
+`sum(value)` | Sums value to the current variable
+`substract(value)` | Substracts value to the current variable
+`multiply(value)` | Multiply values
+`divide(value)` | Divide values
+`addSlashes()` | Alias of addSlashes()
+`encodeTags()` | Encode the htmls tags inside the variable
+`decodeTags()` | Decode the tags inside the variable
+`stripTags()` | Alias of strip_tags()
+`urldecode()` | Alias of urldecode()
+`trim()` | Alias of trim()
+`sha1()` | Returns the sha1() of the variable
+`numberFormat(decimals)` | Alias of number_format()
+`lastIndex()` | Returns the last array's index of the variable
+`lastValue()` | Returns the array's last element
+`jsonEncode()` | Alias of json_encode()
+`replace(find,replace)` | Alias of str_replace()
+`default(value)` | In case variable is empty, assign it value
+`ifEmpty(value [,else_value])` | If variable is empty assign it value, else if else_value is set, set it to else_value
+`if(value, then_value [,else_value [,comparisson_operator]] )` | Conditionally set the variable's value. All arguments can be variables
+`preventTagEncode()` | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
 
 ### Creating custom modifiers
 If you need a custom modifier you can extend the list and create your own.
