@@ -13,4 +13,4 @@ matrix:
     - php: 7.0
 
 script:
-  - phpunit --coverage-text
+  - phpunit tests/TonicTest

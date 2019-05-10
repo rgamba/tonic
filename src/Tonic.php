@@ -28,11 +28,11 @@ class Tonic{
     /**
     * Enable template caching
     */
-    public $enable_content_cache = false;
+    public static $enable_content_cache = false;
     /**
     * Caching directory (must have write permissions)
     */
-    public $cache_dir = "cache/";
+    public static $cache_dir = "cache/";
     /**
     * Cache files lifetime
     */
@@ -57,6 +57,9 @@ class Tonic{
     private $cur_context = null;
     private static $modifiers = null;
     private static $globals=array();
+    private $blocks = array();
+    private $blocks_override = array();
+    private $base = null;
 
     /**
     * Object constructor
@@ -188,11 +191,14 @@ class Tonic{
     */
     public function render($replace_cache=false){
         if($replace_cache)
-            if(file_exists($this->cache_dir.sha1($this->file)))
-                unlink($this->cache_dir.sha1($this->file));
+            if(file_exists(self::$cache_dir.sha1($this->file)))
+                unlink(self::$cache_dir.sha1($this->file));
         if(!$this->is_php){
             if(!$this->getFromCache()){
                 $this->assignGlobals();
+                $this->handleExtends();
+                $this->handleBlockMacros();
+                $this->handleBlocks();
                 $this->handleIncludes();
                 $this->handleIfMacros();
                 $this->handleLoopMacros();
@@ -204,22 +210,54 @@ class Tonic{
         }else{
             $this->renderPhp();
         }
+        if($this->base != null) {
+            // This template has inheritance
+            $parent = new Tonic($this->base);
+            $parent->setContext($this->assigned);
+            $parent->overrideBlocks($this->blocks);
+            return $parent->render();
+        }
+
         return $this->output;
     }
 
+    /**
+    * For internal use only for template inheritance. 
+    */
+    public function overrideBlocks($blocks) {
+        $this->blocks_override = $blocks;
+    }
+
+    /**
+    * Backwards compatibility for cache.
+    */
+    public function __get($var) {
+        switch($var) {
+            case 'enable_content_cache':
+                // Backwards compatibility support
+                return self::$enable_content_cache;
+                break;
+            case 'cache_dir':
+                return self::$cache_dir;
+                break;
+            default:
+                throw new \Exception("Tried to access invalid property " . $var);
+        }
+    }
+
     private function getFromCache(){
-        if($this->enable_content_cache!=true || !file_exists($this->cache_dir.sha1($this->file)))
+        if(self::$enable_content_cache!=true || !file_exists(self::$cache_dir.sha1($this->file)))
             return false;
-        $file_expiration = filemtime($this->cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
+        $file_expiration = filemtime(self::$cache_dir.sha1($this->file)) + (int)$this->cache_lifetime;
         if($file_expiration < time()){
-            unlink($this->cache_dir.sha1($this->file));
+            unlink(self::$cache_dir.sha1($this->file));
             return false;
         }
         $this->assignGlobals();
         foreach($this->assigned as $var => $val)
             ${$var}=$val;
         ob_start();
-        include_once($this->cache_dir.sha1($this->file));
+        include_once(self::$cache_dir.sha1($this->file));
         $this->output=ob_get_clean();
         return true;
     }
@@ -243,7 +281,7 @@ class Tonic{
         foreach($this->assigned as $var => $val){
             ${$var}=$val;
         }
-        if($this->enable_content_cache==true){
+        if(self::$enable_content_cache==true){
             $this->saveCache();
         }
         ob_start();
@@ -256,7 +294,7 @@ class Tonic{
 
     private function saveCache(){
         $file_name=sha1($this->file);
-        $cache=@fopen($this->cache_dir.$file_name,'w');
+        $cache=@fopen(self::$cache_dir.$file_name,'w');
         @fwrite($cache,$this->content);
         @fclose($cache);
     }
@@ -515,12 +553,44 @@ class Tonic{
         );
     }
 
+    private function escapeCharsInString($str, $escapeChar, $repChar, $strDelimiter='"') {
+        $ret = "";
+        $inQuote = false;
+        $escaped = false;
+        for($i = 0; $i <= strlen($str); $i++) {
+            $char = substr($str, $i, 1);
+            switch($char) {
+                case '\\':
+                    $escaped = true;
+                    $ret .= $char;
+                    break;
+                case $strDelimiter:
+                    if(!$escaped) {
+                        $inQuote = !$inQuote;
+                    }
+                    $ret .= $char;
+                    break;
+                default:
+                    if($inQuote && $char == $escapeChar) {
+                        $ret .= $repChar;
+                    } else {
+                        $ret .= $char;
+                    }
+            }
+            if($escaped) {
+                $escaped = false;
+            }
+        }
+        return $ret;
+    }
+
     private function handleVars(){
         $matches=array();
         preg_match_all('/\{\s*\$(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[1] as $i => $var_name){
                 $prev_tag=strpos($var_name,'preventTag') === false ? false : true;
+                $var_name = $this->escapeCharsInString($var_name, '.', '**dot**');
                 $var_name=explode('.',$var_name);
                 if(count($var_name)>1){
                     $vn=$var_name[0];
@@ -530,6 +600,7 @@ class Tonic{
                     unset($var_name[0]);
                     $mod=array();
                     foreach($var_name as $j => $index){
+                        $index = str_replace('**dot**', '.', $index);
                         $index=explode('->',$index,2);
                         $obj='';
                         if(count($index)>1){
@@ -618,6 +689,14 @@ class Tonic{
             return false;
         }
         $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-loop\s*=\s*"(.+?)"(.*?)>/','{loop $3}<$1$2$4>',$this->content);
+    }
+
+    private function handleBlockMacros(){
+        $match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-block\s*=\s*"(.+?)".*?>/','{endblock}');
+        if (empty($match)) {
+            return false;
+        }
+        $this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-block\s*=\s*"(.+?)"(.*?)>/','{block $3}<$1$2$4>',$this->content);
     }
 
     private function matchTags($regex, $append=""){
@@ -736,6 +815,29 @@ class Tonic{
         return $ret;
     }
 
+    private function handleExtends(){
+        $matches=array();
+        preg_match_all('/\{\s*(extends )\s*(.+?)\s*\}/',$this->content,$matches);
+        $base = $matches[2];
+        if(count($base) <= 0)
+            return;
+        if(count($base)>1)
+            throw new \Exception("Each template can extend 1 parent at the most");
+        $base = $base[0];
+        if(substr($base, 0, 1) == '"') {
+            $base = substr($base, 1);
+        }
+        if(substr($base, -1) == '"') {
+            $base = substr($base, 0, -1);
+        }
+        $base = self::$root . $base;
+        if(!file_exists($base)) {
+            throw new \Exception("Unable to extend base template ". $base);
+        }
+        $this->base = $base;
+        $this->content = str_replace($matches[0][0], "", $this->content);
+    }
+
     private function handleIfs(){
         $matches=array();
         preg_match_all('/\{\s*(if|elseif)\s*(.+?)\s*\}/',$this->content,$matches);
@@ -800,13 +902,39 @@ class Tonic{
 
     }
 
+    private function handleBlocks(){
+        $matches=array();
+        preg_match_all('/\{\s*(block)\s*(.+?)\s*\}/',$this->content,$matches);
+        $blocks = $matches[2];
+        if(count($blocks) <= 0)
+            return;
+        foreach($blocks as $i => $block) {
+            $block = trim($block);
+            $rv = '<?php ob_start(array(&$this, "ob_'.$block.'")); ?>';
+            $this->content = str_replace($matches[0][$i], $rv, $this->content);
+        }
+        $this->content=preg_replace('/\{\s*endblock\s*\}/','<?php ob_end_flush(); ?>',$this->content);
+    }
+
+    public function __call($name, $args) {
+        $n = explode('_', $name);
+        if($n[0] == 'ob') {
+            $this->blocks[$n[1]] = $args[0];
+        }
+        if($this->base != null)
+            return "";
+        
+        return empty($this->blocks_override[$n[1]]) ? $args[0] : $this->blocks_override[$n[1]];
+    }
+
     private function handleLoops(){
         $matches=array();
         preg_match_all('/\{\s*(loop|for)\s*(.+?)\s*\}/',$this->content,$matches);
         if(!empty($matches)){
             foreach($matches[2] as $i => $loop){
+                $loop = str_replace(' in ', '**in**', $loop);
                 $loop = $this->removeWhiteSpaces($loop);
-                $loop_det=explode('in',$loop);
+                $loop_det=explode('**in**',$loop);
                 $loop_name=$loop_det[1];
                 unset($loop_det[1]);
                 $loop_name=explode('.',$loop_name);
@@ -831,7 +959,7 @@ class Tonic{
                 }
 
                 foreach($loop_det as $j => $_val){
-                    list($k,$v)=explode(',',$_val);
+                    @list($k,$v)=explode(',',$_val);
                     if($k=="key"){
                         $key=$v;
                         continue;

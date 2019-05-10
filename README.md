@@ -1,5 +1,8 @@
 # tonic
-Super fast and powerful template engine.
+
+[![Build Status](https://travis-ci.org/rgamba/tonic.svg?branch=master)](https://travis-ci.org/rgamba/tonic)
+
+Super fast and powerful template engine. Pure PHP, zero dependencies.
 
 ## Usage
 Using Tonic is pretty straight forward.
@@ -74,36 +77,36 @@ Which will render `$my_date` to the timezone configured in ` Tonic::$local_tz`
 
 Name | Description
 --- | ---
-upper() | Uppercase
-lower() | Lowercase
-capitalize() | Capitalize words (ucwords)
-abs() | Absolute value
-truncate(len) | Truncate and add "..." if string is larger than "len"
-count() | Alias to count()
-length() | alias to count()
-date(format) | Format date like date(format)
-nl2br() | Alias to nl2br
-stripSlashes() | Alias to stripSlashes()
-sum(value) | Sums value to the current variable
-substract(value) | Substracts value to the current variable
-multiply(value) | Multiply values
-divide(value) | Divide values
-addSlashes() | Alias of addSlashes()
-encodeTags() | Encode the htmls tags inside the variable
-decodeTags() | Decode the tags inside the variable
-stripTags() | Alias of strip_tags()
-urldecode() | Alias of urldecode()
-trim() | Alias of trim()
-sha1() | Returns the sha1() of the variable
-numberFormat(decimals) | Alias of number_format()
-lastIndex() | Returns the last array's index of the variable
-lastValue() | Returns the array's last element
-jsonEncode() | Alias of json_encode()
-replace(find,replace) | Alias of str_replace()
-default(value) | In case variable is empty, assign it value
-ifEmpty(value [,else_value]) | If variable is empty assign it value, else if else_value is set, set it to else_value
-if(value, then_value [,else_value [,comparisson_operator]] ) | Conditionally set the variable's value. All arguments can be variables
-preventTagEncode() | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
+`upper()` | Uppercase
+`lower()` | Lowercase
+`capitalize()` | Capitalize words (ucwords)
+`abs()` | Absolute value
+`truncate(len)` | Truncate and add "..." if string is larger than "len"
+`count()` | Alias to count()
+`length()` | alias to count()
+`date(format)` | Format date like date(format)
+`nl2br()` | Alias to nl2br
+`stripSlashes()` | Alias to stripSlashes()
+`sum(value)` | Sums value to the current variable
+`substract(value)` | Substracts value to the current variable
+`multiply(value)` | Multiply values
+`divide(value)` | Divide values
+`addSlashes()` | Alias of addSlashes()
+`encodeTags()` | Encode the htmls tags inside the variable
+`decodeTags()` | Decode the tags inside the variable
+`stripTags()` | Alias of strip_tags()
+`urldecode()` | Alias of urldecode()
+`trim()` | Alias of trim()
+`sha1()` | Returns the sha1() of the variable
+`numberFormat(decimals)` | Alias of number_format()
+`lastIndex()` | Returns the last array's index of the variable
+`lastValue()` | Returns the array's last element
+`jsonEncode()` | Alias of json_encode()
+`replace(find,replace)` | Alias of str_replace()
+`default(value)` | In case variable is empty, assign it value
+`ifEmpty(value [,else_value])` | If variable is empty assign it value, else if else_value is set, set it to else_value
+`if(value, then_value [,else_value [,comparisson_operator]] )` | Conditionally set the variable's value. All arguments can be variables
+`preventTagEncode()` | If ESCAPE_TAGS_IN_VARS = true, this prevents the variable's value to be encoded
 
 ### Creating custom modifiers
 If you need a custom modifier you can extend the list and create your own.
@@ -220,6 +223,7 @@ Which is exactly the same as:
 </ul>
 {endif}
 ```
+
 ## Localizing
 Tonic has localization support. Alter the calling as followed:
 
@@ -250,10 +254,86 @@ The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be v
 
 To access a localized string in you template use ```{$localized.FILENAME.KEY}``` while ```KEY``` is the key you used in the XML-Document and ```FILENAME```is the name of the localization file without the extension (i.e. ```EN```). In this example that would be ```{$localized.EN.TEXT}```.
 
+## Template inheritance
+Tonic supports single template inheritance. The idea behind this is to keep things nice and simple. Multiple inheritance can lead to complicated views difficult to maintain.
+
+In Tonic, template inheritance is based on `blocks`. Suppose we have the following base template:
+
+**base.html**
+```html
+<html>
+<head>
+<title>Tonic</title>
+</head>
+<body>
+<section tn-block="header">
+    <h1>Default welcome message!</h1>
+</section>
+<section>
+    <div tn-block="content">
+        <p>This is the default content.</p>
+    </div>
+</section>
+<section tn-block="footer">Tonic 2016</section>
+</body>
+```
+
+Then you have several partial templates or views and you would like to reuse the main `base.html` as a "skeleton". To do that, we work with `blocks`.
+Each block is defined by the tag `{block name}{endblock}` and/or by the html attribute `tn-block="name"` which effectively encloses the HTML element with the attibute as the block with the name __name__.
+
+**inner.html**
+```html
+{ extends base.html }
+<section tn-block="header" class="myheader">
+    <h1>Welcome to my inner page!</h1>
+</section>
+<p>This content WON´T be rendered at all!</p>
+<div tn-block="content">
+    <p>This is the content of my inner view.
+</div>
+```
+
+As a result we will have the following view:
+```html
+<html>
+<head>
+<title>Tonic</title>
+</head>
+<body>
+<section class="myheader">
+    <h1>Welcome to my inner page!</h1>
+</section>
+<section>
+    <div>
+        <p>This is the content of my inner view.
+    </div>
+</section>
+<section>Tonic 2016</section>
+</body>
+```
+
+There are several keys here:
+* The `{ extend }` tag. Which first and only argument should be the template file relative to `Tonic::$root` (by default `./`).
+* The `tn-block="header"` html attribute that defines the block and is enclosed by the closing matching tag of the HTML element. 
+* All the blocks found in the child template (inner.html) will effectively replace the matching blocks on the parent template (base.html). If there is a block in the child template that is not defined in the parent template, **that block won´t be rendered at all**.
+* Block names must only by alphanumerical with and must not contain `$` or any special characters or spaces.
+* The parent template (base.html) inherits the context (scope, variables) of the child template.
+* You can only extend 1 template.
+
+**NOTE** It is also possible to define blocks using the `{block header}{endblock}` notation. We prefer to use HTML attributes as it is cleaner. 
+Example:
+```html
+{block myBlock}<div><h1>Welcome</h1></div>{endblock}
+```
+is exactly the same as:
+```html
+<div tn-block="myBlock"><h1>Welcome</h1></div>
+```
+
 ## Changelog
-* XX-XX-XXXX - X.X.X - Added support for multiple localization files
-* XX-XX-XXXX - X.X.X - Added localization support
-* 25-03-2015 - 3.0.0 - Added Context Awareness and Macro Syntax for ifs and loops
+* 10-05-2019 - 3.2   - NitricWare Fork: Localization Support
+* 11-10-2016 - 3.1.0 - Added support for template inheritance
+* 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
 * 20-03-2015 - 2.1.0 - Added the option to extend modifiers.
 * 19-03-2015 - 2.0.0 - IMPORTANT update. The syntax of most structures has changed slightly, it's not backwards compatible with previous versions.
