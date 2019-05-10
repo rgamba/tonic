@@ -845,21 +845,21 @@ class Tonic{
             foreach($matches[2] as $i => $condition){
                 $condition=trim($condition);
                 $condition=str_replace(array(
-                    'eq',
-                    'gt',
-                    'lt',
-                    'neq',
-                    'or',
-                    'gte',
-                    'lte'
+                    ' eq ',
+                    ' gt ',
+                    ' lt ',
+                    ' neq ',
+                    ' or ',
+                    ' gte ',
+                    ' lte '
                 ),array(
-                    '==',
-                    '>',
-                    '<',
-                    '!=',
-                    '||',
-                    '>=',
-                    '<='
+                    ' == ',
+                    ' > ',
+                    ' < ',
+                    ' != ',
+                    ' || ',
+                    ' >= ',
+                    ' <= '
 
                 ),$condition);
                 $var_match=array();
