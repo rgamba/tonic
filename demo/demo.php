@@ -1,7 +1,7 @@
 <?php
 namespace main;
 
-require_once("../Tonic.php");
+require_once("../src/Tonic.php");
 
 use Tonic\Tonic;
 
