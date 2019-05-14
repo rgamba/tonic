@@ -501,7 +501,7 @@ class Tonic{
             switch($char){
                 case "\\":
                     $escaped = true;
-                    continue;
+                    continue2;
                     break;
                 case "'":
                 case '"':
@@ -515,7 +515,7 @@ class Tonic{
                 case ">":
                     if(!$in_str){
                         if($prev_char == "?"){
-                            continue;
+                            continue 2;
                         }
                         $in_tag = false;
                         if($capturing_tag_name) {
@@ -526,12 +526,12 @@ class Tonic{
                 case "<":
                     if(!$in_str){
                         if(substr($cont, $j+1, 1) == "?"){
-                            continue;
+                            continue 2;
                         }
                         $prev_tag = "";
                         $in_tag = true;
                         $capturing_tag_name = true;
-                        continue;
+                        continue 2;
                     }
                     break;
                 case " ":
@@ -748,7 +748,7 @@ class Tonic{
                 switch ($char) {
                     case "\\":
                         $escaped = true;
-                        continue;
+                        continue 2;
                         break;
                     case "'":
                     case '"':
@@ -783,13 +783,13 @@ class Tonic{
                         break;
                     case "<":
                         if($in_tag){
-                            continue;
+                            continue 2;
                         }
                         if(!$in_str){
                             $prev_tag = "";
                             $in_tag = true;
                             $capturing_tag_name = true;
-                            continue;
+                            continue 2;
                         }
                         break;
                     case " ":
