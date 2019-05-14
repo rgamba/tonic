@@ -189,7 +189,7 @@ class Tonic{
     * Return compiled template
     * @return <type>
     */
-    public function render($replace_cache=false){
+    public function render($print = false, $replace_cache=false){
         if($replace_cache)
             if(file_exists(self::$cache_dir.sha1($this->file)))
                 unlink(self::$cache_dir.sha1($this->file));
@@ -216,6 +216,10 @@ class Tonic{
             $parent->setContext($this->assigned);
             $parent->overrideBlocks($this->blocks);
             return $parent->render();
+        }
+
+        if($print) {
+            echo $this->output;
         }
 
         return $this->output;
