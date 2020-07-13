@@ -47,7 +47,7 @@
 		 */
 		public array $localized = array();
 		
-		private $file;
+		private string $file;
 		private array $languageFiles = array();
 		private array $assigned = array();
 		private string $output = "";
@@ -57,7 +57,7 @@
 		private bool $is_php = false;
 		private $cur_context = null;
 		private static $modifiers = null;
-		private array static $globals = array();
+		private static array $globals = array();
 		private array $blocks = array();
 		private array $blocks_override = array();
 		private $base = null;
@@ -65,7 +65,7 @@
 		/**
 		 * Object constructor
 		 *
-		 * @param              $file template-file to load
+		 * @param string       $file template file to load
 		 * @param string|array $languages
 		 */
 		public function __construct ($file = NULL, $languages = NULL) {
@@ -92,10 +92,12 @@
 		/**
 		 * Create a new custom modifier
 		 *
-		 * @param Name of the modifier
-		 * @param Lambda function, modifier function
+		 * @param string $name of the modifier
+		 * @param string $func function, modifier function
+		 *
+		 * @return bool
 		 */
-		public static function extendModifier ($name, $func) {
+		public static function extendModifier (string $name, string $func): bool {
 			if (!empty(self::$modifiers[$name]))
 				return false;
 			if (!is_callable($func))
@@ -107,12 +109,15 @@
 		/**
 		 * Set the global environment variables for all templates
 		 *
-		 * @param associative array with the global variables
+		 * @param array $g associative array with the global variables
+		 *
+		 * @return bool
 		 */
-		public static function setGlobals ($g = array()) {
+		public static function setGlobals (array $g = array()): bool {
 			if (!is_array($g))
 				return false;
 			self::$globals = $g;
+			return true;
 		}
 		
 		/**
@@ -122,7 +127,13 @@
 		 *
 		 * @return <type>
 		 */
-		public function load ($file = NULL) {
+		
+		/**
+		 * @param string|NULL $file
+		 *
+		 * @return Tonic
+		 */
+		public function load (string $file = NULL): Tonic {
 			if ($file != NULL)
 				$this->file = $file;
 			if (empty($this->file)) return false;
