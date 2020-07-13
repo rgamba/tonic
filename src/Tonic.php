@@ -1,6 +1,6 @@
 <?php
 /**
-* tonic v3.0
+* tonic v3.2
 *
 * Lightweight PHP templating engine
 *
@@ -10,7 +10,7 @@
 * Localization Support by NitricWare (Kurt Höblinger)
 *
 */
-namespace Tonic;
+namespace NitricWare;
 
 class Tonic{
     /**
@@ -189,7 +189,7 @@ class Tonic{
     * Return compiled template
     * @return <type>
     */
-    public function render($print = false, $replace_cache=false){
+    public function render($print = false, $replace_cache=false): string {
         if($replace_cache)
             if(file_exists(self::$cache_dir.sha1($this->file)))
                 unlink(self::$cache_dir.sha1($this->file));
