@@ -1,0 +1,29 @@
+{
+  "name": "nitricware/tonic",
+  "version": "3.2",
+  "type": "library",
+  "description": "PHP template engine without dependencies.",
+  "keywords": ["php","template","html"],
+  "homepage": "https://github.com/nitricware/tonic",
+  "license": "BSD 3-Clause",
+  "authors": [
+    {
+      "name": "Ricardo Gamba",
+      "email": "rgamba@gmail.com",
+      "homepage": "http://github.com/rgamba",
+      "role": "Lead"
+    },
+    {
+      "name": "Kurt Höblinger",
+      "email": "office@nitricware.com",
+      "homepage": "http://nitricware.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "office@nitricware.com"
+  },
+  "require": {
+    "php": ">=7.4"
+  }
+}

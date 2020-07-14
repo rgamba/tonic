@@ -33,7 +33,7 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 </body>
 ```
 ## Installation
-**nitricware/tonic package coming soon**
+
 Install using composer
 ```
 $ composer require nitricware/tonic
