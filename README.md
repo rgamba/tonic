@@ -1,8 +1,8 @@
 # tonic
 
-[![Build Status](https://travis-ci.org/rgamba/tonic.svg?branch=master)](https://travis-ci.org/rgamba/tonic)
-
 Super fast and powerful template engine. Pure PHP, zero dependencies.
+
+This fork of tonic continues the work of rgamba.
 
 ## Usage
 Using Tonic is pretty straight forward.
@@ -33,9 +33,10 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 </body>
 ```
 ## Installation
+**nitricware/tonic package coming soon**
 Install using composer
 ```
-$ composer require rgamba/tonic
+$ composer require nitricware/tonic
 ```
 ## Caching
 All tonic templates are compiled back to native PHP code. It's highly recommended that you use the caching functionality so that the same template doesn't need to be compiled over and over again increasing the CPU usage on server side.
@@ -330,7 +331,12 @@ is exactly the same as:
 <div tn-block="myBlock"><h1>Welcome</h1></div>
 ```
 
+## Roadmap
+
+* add more ```@throws``` instead of  ```@return bool|void```.
+
 ## Changelog
+* 14-07-2020 - 3.3   - PHP 7.4 Update: added type hinting and removed unused functionality
 * 10-05-2019 - 3.2   - NitricWare Fork: Localization Support
 * 11-10-2016 - 3.1.0 - Added support for template inheritance
 * 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
