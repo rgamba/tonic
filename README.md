@@ -35,8 +35,12 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 ## Installation
 
 Install using composer
-```
-$ composer require nitricware/tonic
+```json
+{
+    "require": {
+        "nitricware/tonic": "^3.0"
+    }
+}
 ```
 ## Caching
 All tonic templates are compiled back to native PHP code. It's highly recommended that you use the caching functionality so that the same template doesn't need to be compiled over and over again increasing the CPU usage on server side.
