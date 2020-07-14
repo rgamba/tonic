@@ -13,6 +13,8 @@
 	
 	namespace NitricWare;
 	
+	use Exception;
+	
 	class Tonic {
 		/**
 		 * Enable context awareness
@@ -41,7 +43,7 @@
 		/**
 		 * Default extension for includes
 		 */
-		public string $default_extension = '.html';
+		//public string $default_extension = '.html';
 		/**
 		 * Localized array
 		 */
@@ -51,9 +53,9 @@
 		private array $languageFiles = array();
 		private array $assigned = array();
 		private string $output = "";
-		private $source;
-		private $content;
-		private $or_content;
+		private string $source;
+		private string $content;
+		private string $or_content;
 		private bool $is_php = false;
 		private $cur_context = null;
 		private static $modifiers = null;
@@ -123,17 +125,11 @@
 		/**
 		 * Load the desired template
 		 *
-		 * @param <type> $file
-		 *
-		 * @return <type>
-		 */
-		
-		/**
 		 * @param string|NULL $file
 		 *
-		 * @return Tonic
+		 * @return Tonic|bool
 		 */
-		public function load (string $file = NULL): Tonic {
+		public function load (string $file = NULL) {
 			if ($file != NULL)
 				$this->file = $file;
 			if (empty($this->file)) return false;
@@ -156,36 +152,41 @@
 		/**
 		 * Load from string instead of file
 		 *
-		 * @param mixed $str
+		 * @param $str
+		 *
+		 * @return Tonic
 		 */
-		public function loadFromString ($str) {
+		public function loadFromString ($str): Tonic {
 			$this->source = $str;
 			$this->content =& $this->source;
 			return $this;
 		}
 		
 		/**
-		 * Assign value to a variable inside the template
+		 * @param string $var
+		 * @param mixed  $val
 		 *
-		 * @param <type> $var
-		 * @param <type> $val
+		 * @return Tonic
 		 */
-		public function assign ($var, $val) {
+		public function assign (string $var, $val): Tonic {
 			$this->assigned[$var] = $val;
 			return $this;
 		}
 		
-		public function getContext () {
+		/**
+		 * @return array
+		 */
+		public function getContext (): array {
 			return $this->assigned;
 		}
 		
 		/**
 		 * Magic method alias for self::assign
 		 *
-		 * @param <type> $k
-		 * @param <type> $v
+		 * @param string $k
+		 * @param mixed  $v
 		 */
-		public function __set ($k, $v) {
+		public function __set (string $k, $v): void {
 			$this->assign($k, $v);
 		}
 		
@@ -194,13 +195,11 @@
 		 * This method should always receive get_defined_vars()
 		 * as the first argument
 		 *
-		 * @param <type> get_defined_vars()
+		 * @param array $vars
 		 *
-		 * @return <type>
+		 * @return Tonic
 		 */
-		public function setContext ($vars) {
-			if (!is_array($vars))
-				return false;
+		public function setContext (array $vars): Tonic {
 			foreach ($vars as $k => $v) {
 				$this->assign($k, $v);
 			}
@@ -210,9 +209,13 @@
 		/**
 		 * Return compiled template
 		 *
-		 * @return <type>
+		 * @param bool $print
+		 * @param bool $replace_cache
+		 *
+		 * @return string
+		 * @throws Exception
 		 */
-		public function render ($print = false, $replace_cache = false): string {
+		public function render (bool $print = false, bool $replace_cache = false): string {
 			if ($replace_cache)
 				if (file_exists(self::$cache_dir . sha1($this->file)))
 					unlink(self::$cache_dir . sha1($this->file));
@@ -250,15 +253,28 @@
 		
 		/**
 		 * For internal use only for template inheritance.
+		 *
+		 * @param mixed $blocks
+		 *
+		 * @return void
 		 */
-		public function overrideBlocks ($blocks) {
+		public function overrideBlocks ($blocks): void {
 			$this->blocks_override = $blocks;
 		}
 		
 		/**
 		 * Backwards compatibility for cache.
 		 */
-		public function __get ($var) {
+		
+		/**
+		 * Backwards compatibility for cache.
+		 *
+		 * @param string $var
+		 *
+		 * @return bool|string
+		 * @throws Exception
+		 */
+		public function __get (string $var) {
 			switch ($var) {
 				case 'enable_content_cache':
 					// Backwards compatibility support
@@ -268,11 +284,14 @@
 					return self::$cache_dir;
 					break;
 				default:
-					throw new \Exception("Tried to access invalid property " . $var);
+					throw new Exception("Tried to access invalid property " . $var);
 			}
 		}
 		
-		private function getFromCache () {
+		/**
+		 * @return bool
+		 */
+		private function getFromCache (): bool {
 			if (self::$enable_content_cache != true || !file_exists(self::$cache_dir . sha1($this->file)))
 				return false;
 			$file_expiration = filemtime(self::$cache_dir . sha1($this->file)) + (int)$this->cache_lifetime;
@@ -289,7 +308,10 @@
 			return true;
 		}
 		
-		private function renderPhp () {
+		/**
+		 * @return bool
+		 */
+		private function renderPhp (): bool {
 			$this->assignGlobals();
 			if (!file_exists($this->file))
 				die("TemplateEngine::renderPhp() - File not found (" . $this->file . ")");
@@ -299,12 +321,18 @@
 			return true;
 		}
 		
-		private function assignGlobals () {
+		/**
+		 * @return void
+		 */
+		private function assignGlobals (): void {
 			self::$globals['__func'] = null;
 			$this->setContext(self::$globals);
 		}
 		
-		private function compile () {
+		/**
+		 * @return void
+		 */
+		private function compile (): void {
 			foreach ($this->assigned as $var => $val) {
 				${$var} = $val;
 			}
@@ -319,14 +347,22 @@
 			}
 		}
 		
-		private function saveCache () {
+		/**
+		 * @return void
+		 */
+		private function saveCache (): void {
 			$file_name = sha1($this->file);
 			$cache = @fopen(self::$cache_dir . $file_name, 'w');
 			@fwrite($cache, $this->content);
 			@fclose($cache);
 		}
 		
-		private function removeWhiteSpaces ($str) {
+		/**
+		 * @param string $str
+		 *
+		 * @return string
+		 */
+		private function removeWhiteSpaces (string $str): string {
 			$in = false;
 			$escaped = false;
 			$ws_string = "";
@@ -360,7 +396,10 @@
 			return $ws_string;
 		}
 		
-		private function handleIncludes () {
+		/**
+		 * @throws Exception
+		 */
+		private function handleIncludes (): void {
 			$matches = array();
 			preg_match_all('/\{\s*include\s*(.+?)\s*}/', $this->content, $matches);
 			if (!empty($matches)) {
@@ -396,7 +435,12 @@
 			}
 		}
 		
-		private function getParams ($params) {
+		/**
+		 * @param string $params
+		 *
+		 * @return array
+		 */
+		private function getParams (string $params): array {
 			$i = 0;
 			$p = array();
 			$escaped = false;
@@ -438,7 +482,11 @@
 			return $p;
 		}
 		
-		private static function callModifier () {
+		/**
+		 * @return string
+		 * @throws Exception
+		 */
+		private static function callModifier (): string {
 			$args = func_get_args();
 			if (empty($args[0])) {
 				return "[empty modifier]";
@@ -448,13 +496,18 @@
 			}
 			try {
 				$ret = call_user_func_array(self::$modifiers[$args[0]], array_slice($args, 1));
-			} catch (\Exception $e) {
-				throw new \Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: " . $e->getMessage() . "</span>");
+			} catch (Exception $e) {
+				throw new Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: " . $e->getMessage() . "</span>");
 			}
 			return $ret;
 		}
 		
-		private function applyModifiers (&$var, $mod, $match = "") {
+		/**
+		 * @param string $var
+		 * @param array  $mod
+		 * @param string $match
+		 */
+		private function applyModifiers (string &$var, array $mod, string $match = ""): void {
 			$context = null;
 			if (self::$context_aware == true) {
 				if (!empty($match) && !in_array("ignoreContext()", $mod)) {
@@ -494,7 +547,13 @@
 			$var = $ov;
 		}
 		
-		private function getVarContext ($str, $context = null) {
+		/**
+		 * @param string     $str
+		 * @param array|null $context
+		 *
+		 * @return array|bool
+		 */
+		private function getVarContext (string $str, $context = null) {
 			if ($context == null) {
 				$cont = $this->content;
 				$in_str = false;
@@ -524,7 +583,7 @@
 				switch ($char) {
 					case "\\":
 						$escaped = true;
-						continue2;
+						continue 2;
 						break;
 					case "'":
 					case '"':
@@ -580,7 +639,15 @@
 			);
 		}
 		
-		private function escapeCharsInString ($str, $escapeChar, $repChar, $strDelimiter = '"') {
+		/**
+		 * @param string $str
+		 * @param string $escapeChar
+		 * @param string $repChar
+		 * @param string $strDelimiter
+		 *
+		 * @return string
+		 */
+		private function escapeCharsInString (string $str, string $escapeChar, string $repChar, string $strDelimiter = '"'): string {
 			$ret = "";
 			$inQuote = false;
 			$escaped = false;
@@ -611,7 +678,10 @@
 			return $ret;
 		}
 		
-		private function handleVars () {
+		/**
+		 * @return void
+		 */
+		private function handleVars (): void {
 			$matches = array();
 			preg_match_all('/\{\s*\$(.+?)\s*\}/', $this->content, $matches);
 			if (!empty($matches)) {
@@ -656,7 +726,14 @@
 			}
 		}
 		
-		private function str_replace_first ($find, $replace, $string) {
+		/**
+		 * @param string $find
+		 * @param string $replace
+		 * @param string $string
+		 *
+		 * @return string
+		 */
+		private function str_replace_first (string $find, string $replace, string $string): string {
 			$pos = strpos($string, $find);
 			if ($pos !== false) {
 				return substr_replace($string, $replace, $pos, strlen($find));
@@ -664,11 +741,19 @@
 			return "";
 		}
 		
-		private function findVarInString (&$string) {
+		/**
+		 * @param string $string
+		 *
+		 * @return string
+		 */
+		private function findVarInString (string &$string): string {
 			return self::findVariableInString($string);
 		}
 		
-		private static function findVariableInString (&$string) {
+		/**
+		 * @param string $string
+		 */
+		private static function findVariableInString (string &$string): void {
 			$var_match = array();
 			preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.\",>]+)/', $string, $var_match);
 			if (!empty($var_match[0])) {
@@ -702,7 +787,10 @@
 			}
 		}
 		
-		private function handleIfMacros () {
+		/**
+		 * @return bool
+		 */
+		private function handleIfMacros (): bool {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/', '{endif}');
 			if (empty($match)) {
 				return false;
@@ -710,7 +798,10 @@
 			$this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-if\s*=\s*"(.+?)"(.*?)>/', '{if $3}<$1$2$4>', $this->content);
 		}
 		
-		private function handleLoopMacros () {
+		/**
+		 * @return bool
+		 */
+		private function handleLoopMacros (): bool {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-loop\s*=\s*"(.+?)".*?>/', '{endloop}');
 			if (empty($match)) {
 				return false;
@@ -718,7 +809,10 @@
 			$this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-loop\s*=\s*"(.+?)"(.*?)>/', '{loop $3}<$1$2$4>', $this->content);
 		}
 		
-		private function handleBlockMacros () {
+		/**
+		 * @return bool
+		 */
+		private function handleBlockMacros (): bool {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-block\s*=\s*"(.+?)".*?>/', '{endblock}');
 			if (empty($match)) {
 				return false;
@@ -726,7 +820,13 @@
 			$this->content = preg_replace('/<([a-xA-Z_\-0-9]+)(.+?)tn-block\s*=\s*"(.+?)"(.*?)>/', '{block $3}<$1$2$4>', $this->content);
 		}
 		
-		private function matchTags ($regex, $append = "") {
+		/**
+		 * @param string $regex
+		 * @param string $append
+		 *
+		 * @return array|bool
+		 */
+		private function matchTags (string $regex, string $append = "") {
 			$matches = array();
 			if (!preg_match_all($regex, $this->content, $matches)) {
 				return false;
@@ -842,14 +942,17 @@
 			return $ret;
 		}
 		
-		private function handleExtends () {
+		/**
+		 * @throws Exception
+		 */
+		private function handleExtends (): void {
 			$matches = array();
 			preg_match_all('/\{\s*(extends )\s*(.+?)\s*\}/', $this->content, $matches);
 			$base = $matches[2];
 			if (count($base) <= 0)
 				return;
 			if (count($base) > 1)
-				throw new \Exception("Each template can extend 1 parent at the most");
+				throw new Exception("Each template can extend 1 parent at the most");
 			$base = $base[0];
 			if (substr($base, 0, 1) == '"') {
 				$base = substr($base, 1);
@@ -859,13 +962,16 @@
 			}
 			$base = self::$root . $base;
 			if (!file_exists($base)) {
-				throw new \Exception("Unable to extend base template " . $base);
+				throw new Exception("Unable to extend base template " . $base);
 			}
 			$this->base = $base;
 			$this->content = str_replace($matches[0][0], "", $this->content);
 		}
 		
-		private function handleIfs () {
+		/**
+		 * @return void
+		 */
+		private function handleIfs (): void {
 			$matches = array();
 			preg_match_all('/\{\s*(if|elseif)\s*(.+?)\s*\}/', $this->content, $matches);
 			if (!empty($matches)) {
@@ -929,7 +1035,10 @@
 			
 		}
 		
-		private function handleBlocks () {
+		/**
+		 * @return void
+		 */
+		private function handleBlocks (): void {
 			$matches = array();
 			preg_match_all('/\{\s*(block)\s*(.+?)\s*\}/', $this->content, $matches);
 			$blocks = $matches[2];
@@ -943,7 +1052,13 @@
 			$this->content = preg_replace('/\{\s*endblock\s*\}/', '<?php ob_end_flush(); ?>', $this->content);
 		}
 		
-		public function __call ($name, $args) {
+		/**
+		 * @param string $name
+		 * @param array  $args
+		 *
+		 * @return mixed|string
+		 */
+		public function __call (string $name, array $args) {
 			$n = explode('_', $name);
 			if ($n[0] == 'ob') {
 				$this->blocks[$n[1]] = $args[0];
@@ -954,6 +1069,9 @@
 			return empty($this->blocks_override[$n[1]]) ? $args[0] : $this->blocks_override[$n[1]];
 		}
 		
+		/**
+		 * @return void
+		 */
 		private function handleLoops () {
 			$matches = array();
 			preg_match_all('/\{\s*(loop|for)\s*(.+?)\s*\}/', $this->content, $matches);
@@ -1003,14 +1121,25 @@
 			$this->content = preg_replace('/\{\s*(\/loop|endloop|\/for|endfor)\s*\}/', '<?php endforeach; ?>', $this->content);
 		}
 		
-		public static function removeSpecialChars ($text) {
+		/**
+		 * @param string $text
+		 *
+		 * @return string
+		 */
+		public static function removeSpecialChars (string $text): string {
 			$find = array('á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú', 'ñ', 'Ñ', ' ', '"', "'");
 			$rep = array('a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U', 'n', 'N', '-', "", "");
 			return str_replace($find, $rep, $text);
-			return (strtr($text, $tofind, $replac));
 		}
 		
-		public static function zeroFill ($text, $digits) {
+		/**
+		 * @param string $text
+		 * @param int    $digits
+		 *
+		 * @return string
+		 */
+		public static function zeroFill (string $text, int $digits): string {
+			$ret = "";
 			if (strlen($text) < $digits) {
 				$ceros = $digits - strlen($text);
 				for ($i = 0; $i <= $ceros - 1; $i++) {
@@ -1023,6 +1152,9 @@
 			}
 		}
 		
+		/**
+		 * @return string
+		 */
 		private static function initModifiers () {
 			self::extendModifier("upper", function ($input) {
 				if (!is_string($input)) {
@@ -1053,7 +1185,7 @@
 			});
 			self::extendModifier("truncate", function ($input, $len) {
 				if (empty($len)) {
-					throw new \Exception("length parameter is required");
+					throw new Exception("length parameter is required");
 				}
 				return substr($input, 0, $len) . (strlen($input) > $len ? "..." : "");
 			});
@@ -1065,31 +1197,31 @@
 			});
 			self::extendModifier("toLocal", function ($input) {
 				if (!is_object($input)) {
-					throw new \Exception("variable is not a valid date");
+					throw new Exception("variable is not a valid date");
 				}
 				return date_timezone_set($input, timezone_open(self::$local_tz));
 			});
 			self::extendModifier("toTz", function ($input, $tz) {
 				if (!is_object($input)) {
-					throw new \Exception("variable is not a valid date");
+					throw new Exception("variable is not a valid date");
 				}
 				return date_timezone_set($input, timezone_open($tz));
 			});
 			self::extendModifier("toGMT", function ($input, $tz) {
 				if (!is_object($input)) {
-					throw new \Exception("variable is not a valid date");
+					throw new Exception("variable is not a valid date");
 				}
 				if (empty($tz)) {
-					throw new \Exception("timezone is required");
+					throw new Exception("timezone is required");
 				}
 				return date_timezone_set($input, timezone_open("GMT"));
 			});
 			self::extendModifier("date", function ($input, $format) {
 				if (!is_object($input)) {
-					throw new \Exception("variable is not a valid date");
+					throw new Exception("variable is not a valid date");
 				}
 				if (empty($format)) {
-					throw new \Exception("date format is required");
+					throw new Exception("date format is required");
 				}
 				return date_format($input, $format);
 			});
@@ -1104,31 +1236,31 @@
 			});
 			self::extendModifier("sum", function ($input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
-					throw new \Exception("input and value must be numeric");
+					throw new Exception("input and value must be numeric");
 				}
 				return $input + (float)$val;
 			});
 			self::extendModifier("substract", function ($input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
-					throw new \Exception("input and value must be numeric");
+					throw new Exception("input and value must be numeric");
 				}
 				return $input - (float)$val;
 			});
 			self::extendModifier("multiply", function ($input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
-					throw new \Exception("input and value must be numeric");
+					throw new Exception("input and value must be numeric");
 				}
 				return $input * (float)$val;
 			});
 			self::extendModifier("divide", function ($input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
-					throw new \Exception("input and value must be numeric");
+					throw new Exception("input and value must be numeric");
 				}
 				return $input / (float)$val;
 			});
 			self::extendModifier("mod", function ($input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
-					throw new \Exception("input and value must be numeric");
+					throw new Exception("input and value must be numeric");
 				}
 				return $input % (float)$val;
 			});
@@ -1173,7 +1305,7 @@
 			});
 			self::extendModifier("sha1", function ($input) {
 				if (!is_string($input)) {
-					throw new \Exception("input must be string");
+					throw new Exception("input must be string");
 				}
 				return sha1($input);
 			});
@@ -1182,19 +1314,19 @@
 			});
 			self::extendModifier("numberFormat", function ($input, $precision = 2) {
 				if (!is_numeric($input)) {
-					throw new \Exception("input must be numeric");
+					throw new Exception("input must be numeric");
 				}
 				return number_format($input, (int)$precision);
 			});
 			self::extendModifier("lastIndex", function ($input) {
 				if (!is_array($input)) {
-					throw new \Exception("input must be an array");
+					throw new Exception("input must be an array");
 				}
 				return current(array_reverse(array_keys($input)));
 			});
 			self::extendModifier("lastValue", function ($input) {
 				if (!is_array($input)) {
-					throw new \Exception("input must be an array");
+					throw new Exception("input must be an array");
 				}
 				return current(array_reverse($input));
 			});
@@ -1206,31 +1338,31 @@
 			});
 			self::extendModifier("join", function ($input, $glue) {
 				if (!is_array($input)) {
-					throw new \Exception("input must be an array");
+					throw new Exception("input must be an array");
 				}
 				if (empty($glue)) {
-					throw new \Exception("string glue is required");
+					throw new Exception("string glue is required");
 				}
 				return implode($glue, $input);
 			});
 			self::extendModifier("explode", function ($input, $del) {
 				if (!is_string($input)) {
-					throw new \Exception("input must be a string");
+					throw new Exception("input must be a string");
 				}
 				if (empty($del)) {
-					throw new \Exception("delimiter is required");
+					throw new Exception("delimiter is required");
 				}
 				return explode($del, $input);
 			});
 			self::extendModifier("replace", function ($input, $search, $replace) {
 				if (!is_string($input)) {
-					throw new \Exception("input must be a string");
+					throw new Exception("input must be a string");
 				}
 				if (empty($search)) {
-					throw new \Exception("search is required");
+					throw new Exception("search is required");
 				}
 				if (empty($replace)) {
-					throw new \Exception("replace is required");
+					throw new Exception("replace is required");
 				}
 				return str_replace($search, $replace, $input);
 			});
@@ -1283,7 +1415,7 @@
 			});
 			self::extendModifier("ifEmpty", function ($input, $true_val, $false_val = null) {
 				if (empty($true_val)) {
-					throw new \Exception("true value is required");
+					throw new Exception("true value is required");
 				}
 				$ret = $input;
 				if (empty($ret)) {
@@ -1295,7 +1427,7 @@
 			});
 			self::extendModifier("if", function ($input, $condition, $true_val, $false_val = null, $operator = "eq") {
 				if (empty($true_val)) {
-					throw new \Exception("true value is required");
+					throw new Exception("true value is required");
 				}
 				switch ($operator) {
 					case '':
@@ -1336,7 +1468,10 @@
 			
 		}
 		
-		public function loadLanguage () {
+		/**
+		 * @return bool
+		 */
+		public function loadLanguage (): bool {
 			foreach ($this->languageFiles as $languageFile) {
 				$pathInfo = pathinfo($languageFile);
 				$fileName = $pathInfo["filename"];
