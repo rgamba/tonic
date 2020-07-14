@@ -1,6 +1,6 @@
 {
   "name": "nitricware/tonic",
-  "version": "3.2",
+  "version": "3.3",
   "type": "library",
   "description": "PHP template engine without dependencies.",
   "keywords": ["php","template","html"],
