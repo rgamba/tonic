@@ -5,6 +5,7 @@
 	 * Lightweight PHP templating engine
 	 *
 	 * @author  Ricardo Gamba <rgamba@gmail.com>
+	 *          Kurt Höblinger <office@nitricware.com>
 	 * @license BSD 3-Clause License
 	 *
 	 * Localization Support by NitricWare (Kurt Höblinger)
@@ -14,6 +15,8 @@
 	namespace NitricWare;
 	
 	use Exception;
+	use DateTime;
+	use Countable;
 	
 	class Tonic {
 		/**
@@ -53,10 +56,9 @@
 		private array $languageFiles = array();
 		private array $assigned = array();
 		private string $output = "";
-		private string $source;
-		private string $content;
-		private string $or_content;
-		private bool $is_php = false;
+		private string $source = "";
+		private string $content = "";
+		private string $or_content = "";
 		private $cur_context = null;
 		private static $modifiers = null;
 		private static array $globals = array();
@@ -95,11 +97,11 @@
 		 * Create a new custom modifier
 		 *
 		 * @param string $name of the modifier
-		 * @param string $func function, modifier function
+		 * @param object $func function, modifier function
 		 *
 		 * @return bool
 		 */
-		public static function extendModifier (string $name, string $func): bool {
+		public static function extendModifier (string $name, object $func): bool {
 			if (!empty(self::$modifiers[$name]))
 				return false;
 			if (!is_callable($func))
@@ -114,6 +116,7 @@
 		 * @param array $g associative array with the global variables
 		 *
 		 * @return bool
+		 * @noinspection PhpUnused
 		 */
 		public static function setGlobals (array $g = array()): bool {
 			if (!is_array($g))
@@ -133,18 +136,12 @@
 			if ($file != NULL)
 				$this->file = $file;
 			if (empty($this->file)) return false;
-			$ext = explode('.', $file);
-			$ext = $ext[count($ext) - 1];
-			if ($ext == "php") {
-				$this->is_php = true;
-			} else {
-				if (!file_exists(self::$root . $this->file)) {
-					echo "<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>tonic</b>: unable to load file '" . self::$root . $this->file . "'</span>";
-					return false;
-				}
-				$this->source = file_get_contents(self::$root . $this->file);
-				$this->content =& $this->source;
+			if (!file_exists(self::$root . $this->file)) {
+				echo "<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>tonic</b>: unable to load file '" . self::$root . $this->file . "'</span>";
+				return false;
 			}
+			$this->source = file_get_contents(self::$root . $this->file);
+			$this->content =& $this->source;
 			$this->or_content = $this->content;
 			return $this;
 		}
@@ -155,6 +152,7 @@
 		 * @param $str
 		 *
 		 * @return Tonic
+		 * @noinspection PhpUnused
 		 */
 		public function loadFromString ($str): Tonic {
 			$this->source = $str;
@@ -175,6 +173,7 @@
 		
 		/**
 		 * @return array
+		 * @noinspection PhpUnused
 		 */
 		public function getContext (): array {
 			return $this->assigned;
@@ -219,23 +218,21 @@
 			if ($replace_cache)
 				if (file_exists(self::$cache_dir . sha1($this->file)))
 					unlink(self::$cache_dir . sha1($this->file));
-			if (!$this->is_php) {
-				if (!$this->getFromCache()) {
-					$this->assignGlobals();
-					$this->handleExtends();
-					$this->handleBlockMacros();
-					$this->handleBlocks();
-					$this->handleIncludes();
-					$this->handleIfMacros();
-					$this->handleLoopMacros();
-					$this->handleLoops();
-					$this->handleIfs();
-					$this->handleVars();
-					$this->compile();
-				}
-			} else {
-				$this->renderPhp();
+
+			if (!$this->getFromCache()) {
+				$this->assignGlobals();
+				$this->handleExtends();
+				$this->handleBlockMacros();
+				$this->handleBlocks();
+				$this->handleIncludes();
+				$this->handleIfMacros();
+				$this->handleLoopMacros();
+				$this->handleLoops();
+				$this->handleIfs();
+				$this->handleVars();
+				$this->compile();
 			}
+			
 			if ($this->base != null) {
 				// This template has inheritance
 				$parent = new Tonic($this->base);
@@ -303,20 +300,8 @@
 			foreach ($this->assigned as $var => $val)
 				${$var} = $val;
 			ob_start();
+			/** @noinspection PhpIncludeInspection */
 			include_once(self::$cache_dir . sha1($this->file));
-			$this->output = ob_get_clean();
-			return true;
-		}
-		
-		/**
-		 * @return bool
-		 */
-		private function renderPhp (): bool {
-			$this->assignGlobals();
-			if (!file_exists($this->file))
-				die("TemplateEngine::renderPhp() - File not found (" . $this->file . ")");
-			ob_start();
-			Sys::get('module_controller')->includeView($this->file, $this->assigned);
 			$this->output = ob_get_clean();
 			return true;
 		}
@@ -401,7 +386,7 @@
 		 */
 		private function handleIncludes (): void {
 			$matches = array();
-			preg_match_all('/\{\s*include\s*(.+?)\s*}/', $this->content, $matches);
+			preg_match_all('/{\s*include\s*(.+?)\s*}/', $this->content, $matches);
 			if (!empty($matches)) {
 				foreach ($matches[1] as $i => $include) {
 					$include = trim($include);
@@ -483,21 +468,22 @@
 		}
 		
 		/**
-		 * @return string
+		 * @return mixed|string
 		 * @throws Exception
+		 * @noinspection PhpUnusedPrivateMethodInspection
 		 */
-		private static function callModifier (): string {
+		private static function callModifier() {
 			$args = func_get_args();
-			if (empty($args[0])) {
+			if(empty($args[0])){
 				return "[empty modifier]";
 			}
-			if (empty(self::$modifiers[$args[0]])) {
+			if(empty(self::$modifiers[$args[0]])){
 				return "[invalid modifier '$args[0]']";
 			}
 			try {
-				$ret = call_user_func_array(self::$modifiers[$args[0]], array_slice($args, 1));
-			} catch (Exception $e) {
-				throw new Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: " . $e->getMessage() . "</span>");
+				$ret = call_user_func_array(self::$modifiers[$args[0]],array_slice($args,1));
+			} catch(Exception $e){
+				throw new Exception("<span style=\"display: inline-block; background: red; color: white; padding: 2px 8px; border-radius: 10px; font-family: 'Lucida Console', Monaco, monospace, sans-serif; font-size: 80%\"><b>$args[0]</b>: ".$e->getMessage()."</span>");
 			}
 			return $ret;
 		}
@@ -561,6 +547,7 @@
 				$in_tag = false;
 				$prev_tag = "";
 				$prev_char = "";
+				$context = ["offset" => 0];
 			} else {
 				$cont = substr($this->content, $context['offset']);
 				$in_str = $context["in_str"];
@@ -583,7 +570,7 @@
 				switch ($char) {
 					case "\\":
 						$escaped = true;
-						continue 2;
+						//continue;
 						break;
 					case "'":
 					case '"':
@@ -596,9 +583,7 @@
 						break;
 					case ">":
 						if (!$in_str) {
-							if ($prev_char == "?") {
-								continue 2;
-							}
+							if ($prev_char == "?") continue 2;
 							$in_tag = false;
 							if ($capturing_tag_name) {
 								$capturing_tag_name = false;
@@ -607,9 +592,7 @@
 						break;
 					case "<":
 						if (!$in_str) {
-							if (substr($cont, $j + 1, 1) == "?") {
-								continue 2;
-							}
+							if (substr($cont, $j + 1, 1) == "?") continue 2;
 							$prev_tag = "";
 							$in_tag = true;
 							$capturing_tag_name = true;
@@ -620,6 +603,7 @@
 						if ($capturing_tag_name) {
 							$capturing_tag_name = false;
 						}
+						break;
 					default:
 						if ($capturing_tag_name) {
 							$prev_tag .= $char;
@@ -683,10 +667,9 @@
 		 */
 		private function handleVars (): void {
 			$matches = array();
-			preg_match_all('/\{\s*\$(.+?)\s*\}/', $this->content, $matches);
+			preg_match_all('/{\s*\$(.+?)\s*}/', $this->content, $matches);
 			if (!empty($matches)) {
 				foreach ($matches[1] as $i => $var_name) {
-					$prev_tag = strpos($var_name, 'preventTag') === false ? false : true;
 					$var_name = $this->escapeCharsInString($var_name, '.', '**dot**');
 					$var_name = explode('.', $var_name);
 					if (count($var_name) > 1) {
@@ -715,10 +698,10 @@
 							}
 						}
 						$var_name = '$' . $vn;
-						$mod = $this->applyModifiers($var_name, $mod, $matches[0][$i]);
+						$this->applyModifiers($var_name, $mod, $matches[0][$i]);
 					} else {
 						$var_name = '$' . $var_name[0];
-						$mod = $this->applyModifiers($var_name, array(), $matches[0][$i]);
+						$this->applyModifiers($var_name, array(), $matches[0][$i]);
 					}
 					$rep = '<?php try{ echo @' . $var_name . '; } catch(\Exception $e) { echo $e->getMessage(); } ?>';
 					$this->content = $this->str_replace_first($matches[0][$i], $rep, $this->content);
@@ -742,55 +725,9 @@
 		}
 		
 		/**
-		 * @param string $string
-		 *
-		 * @return string
+		 * @return bool|void
 		 */
-		private function findVarInString (string &$string): string {
-			return self::findVariableInString($string);
-		}
-		
-		/**
-		 * @param string $string
-		 */
-		private static function findVariableInString (string &$string): void {
-			$var_match = array();
-			preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.\",>]+)/', $string, $var_match);
-			if (!empty($var_match[0])) {
-				foreach ($var_match[1] as $j => $var) {
-					$_var_name = explode('.', $string);
-					if (count($_var_name) > 1) {
-						$vn = $_var_name[0];
-						unset($_var_name[0]);
-						$mod = array();
-						foreach ($_var_name as $k => $index) {
-							$index = explode('->', $index, 2);
-							$obj = '';
-							if (count($index) > 1) {
-								$obj = '->' . $index[1];
-								$index = $index[0];
-							} else
-								$index = $index[0];
-							if (substr($index, -1, 1) == ")") {
-								$mod[] = $index . $obj;
-							} else {
-								$vn .= "['$index']$obj";
-							}
-						}
-						$_var_name = '$' . $vn;
-						$this->applyModifiers($_var_name, $mod);
-					} else {
-						$_var_name = '$' . $_var_name[0];
-					}
-					$string = str_replace(@$var_match[0][$j], '".' . $_var_name . '."', $string);
-				}
-			}
-		}
-		
-		/**
-		 * @return bool
-		 */
-		private function handleIfMacros (): bool {
+		private function handleIfMacros () {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-if\s*=\s*"(.+?)".*?>/', '{endif}');
 			if (empty($match)) {
 				return false;
@@ -799,9 +736,9 @@
 		}
 		
 		/**
-		 * @return bool
+		 * @return void|bool
 		 */
-		private function handleLoopMacros (): bool {
+		private function handleLoopMacros () {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-loop\s*=\s*"(.+?)".*?>/', '{endloop}');
 			if (empty($match)) {
 				return false;
@@ -810,9 +747,9 @@
 		}
 		
 		/**
-		 * @return bool
+		 * @return void|bool
 		 */
-		private function handleBlockMacros (): bool {
+		private function handleBlockMacros () {
 			$match = $this->matchTags('/<([a-xA-Z_\-0-9]+).+?tn-block\s*=\s*"(.+?)".*?>/', '{endblock}');
 			if (empty($match)) {
 				return false;
@@ -832,7 +769,6 @@
 				return false;
 			}
 			$offset = 0;
-			$_offset = 0;
 			$ret = array();
 			foreach ($matches[0] as $k => $match) {
 				$_cont = substr($this->content, $offset);
@@ -844,12 +780,12 @@
 				$offset += $i + $len_match;
 				$str_char = "";
 				$lvl = 1;
-				$prev_char = "";
 				$prev_tag = "";
 				$struct = "";
 				$in_tag = false;
 				$capturing_tag_name = false;
 				$_m = array();
+				$break = false;
 				foreach ($matches as $z => $v) {
 					$_m[$z] = $matches[$z][$k];
 				}
@@ -919,6 +855,7 @@
 							if ($capturing_tag_name) {
 								$capturing_tag_name = false;
 							}
+							break;
 						default:
 							if ($capturing_tag_name) {
 								$prev_tag .= $char;
@@ -947,7 +884,7 @@
 		 */
 		private function handleExtends (): void {
 			$matches = array();
-			preg_match_all('/\{\s*(extends )\s*(.+?)\s*\}/', $this->content, $matches);
+			preg_match_all('/{\s*(extends )\s*(.+?)\s*}/', $this->content, $matches);
 			$base = $matches[2];
 			if (count($base) <= 0)
 				return;
@@ -973,7 +910,7 @@
 		 */
 		private function handleIfs (): void {
 			$matches = array();
-			preg_match_all('/\{\s*(if|elseif)\s*(.+?)\s*\}/', $this->content, $matches);
+			preg_match_all('/{\s*(if|elseif)\s*(.+?)\s*}/', $this->content, $matches);
 			if (!empty($matches)) {
 				foreach ($matches[2] as $i => $condition) {
 					$condition = trim($condition);
@@ -996,7 +933,7 @@
 					
 					), $condition);
 					$var_match = array();
-					preg_match_all('/\$([a-zA-Z0-9_\-\(\)\.]+)/', $condition, $var_match);
+					preg_match_all('/\$([a-zA-Z0-9_\-().]+)/', $condition, $var_match);
 					if (!empty($var_match)) {
 						foreach ($var_match[1] as $j => $var) {
 							$var_name = explode('.', $var);
@@ -1030,8 +967,8 @@
 					$this->content = str_replace($matches[0][$i], $rep, $this->content);
 				}
 			}
-			$this->content = preg_replace('/\{\s*(\/if|endif)\s*\}/', '<?php endif; ?>', $this->content);
-			$this->content = preg_replace('/\{\s*else\s*\}/', '<?php else: ?>', $this->content);
+			$this->content = preg_replace('/{\s*(\/if|endif)\s*}/', '<?php endif; ?>', $this->content);
+			$this->content = preg_replace('/{\s*else\s*}/', '<?php else: ?>', $this->content);
 			
 		}
 		
@@ -1040,7 +977,7 @@
 		 */
 		private function handleBlocks (): void {
 			$matches = array();
-			preg_match_all('/\{\s*(block)\s*(.+?)\s*\}/', $this->content, $matches);
+			preg_match_all('/{\s*(block)\s*(.+?)\s*}/', $this->content, $matches);
 			$blocks = $matches[2];
 			if (count($blocks) <= 0)
 				return;
@@ -1049,7 +986,7 @@
 				$rv = '<?php ob_start(array(&$this, "ob_' . $block . '")); ?>';
 				$this->content = str_replace($matches[0][$i], $rv, $this->content);
 			}
-			$this->content = preg_replace('/\{\s*endblock\s*\}/', '<?php ob_end_flush(); ?>', $this->content);
+			$this->content = preg_replace('/{\s*endblock\s*}/', '<?php ob_end_flush(); ?>', $this->content);
 		}
 		
 		/**
@@ -1074,7 +1011,7 @@
 		 */
 		private function handleLoops () {
 			$matches = array();
-			preg_match_all('/\{\s*(loop|for)\s*(.+?)\s*\}/', $this->content, $matches);
+			preg_match_all('/{\s*(loop|for)\s*(.+?)\s*}/', $this->content, $matches);
 			if (!empty($matches)) {
 				foreach ($matches[2] as $i => $loop) {
 					$loop = str_replace(' in ', '**in**', $loop);
@@ -1118,7 +1055,7 @@
 					$this->content = str_replace($matches[0][$i], $rep, $this->content);
 				}
 			}
-			$this->content = preg_replace('/\{\s*(\/loop|endloop|\/for|endfor)\s*\}/', '<?php endforeach; ?>', $this->content);
+			$this->content = preg_replace('/{\s*(\/loop|endloop|\/for|endfor)\s*}/', '<?php endforeach; ?>', $this->content);
 		}
 		
 		/**
@@ -1137,6 +1074,7 @@
 		 * @param int    $digits
 		 *
 		 * @return string
+		 * @noinspection PhpUnused
 		 */
 		public static function zeroFill (string $text, int $digits): string {
 			$ret = "";
@@ -1153,61 +1091,61 @@
 		}
 		
 		/**
-		 * @return string
+		 * @return void|string
 		 */
 		private static function initModifiers () {
-			self::extendModifier("upper", function ($input) {
+			self::extendModifier("upper", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return strtoupper($input);
 			});
-			self::extendModifier("lower", function ($input) {
+			self::extendModifier("lower", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return strtolower($input);
 			});
-			self::extendModifier("capitalize", function ($input) {
+			self::extendModifier("capitalize", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return ucwords($input);
 			});
-			self::extendModifier("abs", function ($input) {
+			self::extendModifier("abs", function (string $input) {
 				if (!is_numeric($input)) {
 					return $input;
 				}
 				return abs($input);
 			});
-			self::extendModifier("isEmpty", function ($input) {
+			self::extendModifier("isEmpty", function (string $input) {
 				return empty($input);
 			});
-			self::extendModifier("truncate", function ($input, $len) {
+			self::extendModifier("truncate", function (string $input, $len) {
 				if (empty($len)) {
 					throw new Exception("length parameter is required");
 				}
 				return substr($input, 0, $len) . (strlen($input) > $len ? "..." : "");
 			});
-			self::extendModifier("count", function ($input) {
+			self::extendModifier("count", function (Countable $input) {
 				return count($input);
 			});
-			self::extendModifier("length", function ($input) {
+			self::extendModifier("length", function (Countable $input) {
 				return count($input);
 			});
-			self::extendModifier("toLocal", function ($input) {
+			self::extendModifier("toLocal", function (DateTime $input) {
 				if (!is_object($input)) {
 					throw new Exception("variable is not a valid date");
 				}
 				return date_timezone_set($input, timezone_open(self::$local_tz));
 			});
-			self::extendModifier("toTz", function ($input, $tz) {
+			self::extendModifier("toTz", function (DateTime $input, $tz) {
 				if (!is_object($input)) {
 					throw new Exception("variable is not a valid date");
 				}
 				return date_timezone_set($input, timezone_open($tz));
 			});
-			self::extendModifier("toGMT", function ($input, $tz) {
+			self::extendModifier("toGMT", function (DateTime $input, $tz) {
 				if (!is_object($input)) {
 					throw new Exception("variable is not a valid date");
 				}
@@ -1216,7 +1154,7 @@
 				}
 				return date_timezone_set($input, timezone_open("GMT"));
 			});
-			self::extendModifier("date", function ($input, $format) {
+			self::extendModifier("date", function (string $input, $format) {
 				if (!is_object($input)) {
 					throw new Exception("variable is not a valid date");
 				}
@@ -1225,118 +1163,118 @@
 				}
 				return date_format($input, $format);
 			});
-			self::extendModifier("nl2br", function ($input) {
+			self::extendModifier("nl2br", function (string $input) {
 				return nl2br($input);
 			});
-			self::extendModifier("stripSlashes", function ($input) {
+			self::extendModifier("stripSlashes", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return stripslashes($input);
 			});
-			self::extendModifier("sum", function ($input, $val) {
+			self::extendModifier("sum", function (string $input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
 					throw new Exception("input and value must be numeric");
 				}
 				return $input + (float)$val;
 			});
-			self::extendModifier("substract", function ($input, $val) {
+			self::extendModifier("substract", function (string $input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
 					throw new Exception("input and value must be numeric");
 				}
 				return $input - (float)$val;
 			});
-			self::extendModifier("multiply", function ($input, $val) {
+			self::extendModifier("multiply", function (string $input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
 					throw new Exception("input and value must be numeric");
 				}
 				return $input * (float)$val;
 			});
-			self::extendModifier("divide", function ($input, $val) {
+			self::extendModifier("divide", function (string $input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
 					throw new Exception("input and value must be numeric");
 				}
 				return $input / (float)$val;
 			});
-			self::extendModifier("mod", function ($input, $val) {
+			self::extendModifier("mod", function (string $input, $val) {
 				if (!is_numeric($input) || !is_numeric($val)) {
 					throw new Exception("input and value must be numeric");
 				}
 				return $input % (float)$val;
 			});
-			self::extendModifier("encodeTags", function ($input) {
+			self::extendModifier("encodeTags", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return htmlspecialchars($input, ENT_NOQUOTES);
 			});
-			self::extendModifier("decodeTags", function ($input) {
+			self::extendModifier("decodeTags", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return htmlspecialchars_decode($input);
 			});
-			self::extendModifier("stripTags", function ($input) {
+			self::extendModifier("stripTags", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return strip_tags($input);
 			});
-			self::extendModifier("urlDecode", function ($input) {
+			self::extendModifier("urlDecode", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return urldecode($input);
 			});
-			self::extendModifier("addSlashes", function ($input) {
+			self::extendModifier("addSlashes", function (string $input) {
 				return addslashes($input);
 			});
-			self::extendModifier("urlFriendly", function ($input) {
+			self::extendModifier("urlFriendly", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return urlencode(self::removeSpecialChars(strtolower($input)));
 			});
-			self::extendModifier("trim", function ($input) {
+			self::extendModifier("trim", function (string $input) {
 				if (!is_string($input)) {
 					return $input;
 				}
 				return trim($input);
 			});
-			self::extendModifier("sha1", function ($input) {
+			self::extendModifier("sha1", function (string $input) {
 				if (!is_string($input)) {
 					throw new Exception("input must be string");
 				}
 				return sha1($input);
 			});
-			self::extendModifier("safe", function ($input) {
+			self::extendModifier("safe", function (string $input) {
 				return htmlentities($input, ENT_QUOTES);
 			});
-			self::extendModifier("numberFormat", function ($input, $precision = 2) {
+			self::extendModifier("numberFormat", function (string $input, $precision = 2) {
 				if (!is_numeric($input)) {
 					throw new Exception("input must be numeric");
 				}
 				return number_format($input, (int)$precision);
 			});
-			self::extendModifier("lastIndex", function ($input) {
+			self::extendModifier("lastIndex", function (string $input) {
 				if (!is_array($input)) {
 					throw new Exception("input must be an array");
 				}
 				return current(array_reverse(array_keys($input)));
 			});
-			self::extendModifier("lastValue", function ($input) {
+			self::extendModifier("lastValue", function (string $input) {
 				if (!is_array($input)) {
 					throw new Exception("input must be an array");
 				}
 				return current(array_reverse($input));
 			});
-			self::extendModifier("jsonEncode", function ($input) {
+			self::extendModifier("jsonEncode", function (string $input) {
 				return json_encode($input);
 			});
-			self::extendModifier("substr", function ($input, $a = 0, $b = 0) {
+			self::extendModifier("substr", function (string $input, $a = 0, $b = 0) {
 				return substr($input, $a, $b);
 			});
-			self::extendModifier("join", function ($input, $glue) {
+			self::extendModifier("join", function (string $input, $glue) {
 				if (!is_array($input)) {
 					throw new Exception("input must be an array");
 				}
@@ -1345,7 +1283,7 @@
 				}
 				return implode($glue, $input);
 			});
-			self::extendModifier("explode", function ($input, $del) {
+			self::extendModifier("explode", function (string $input, $del) {
 				if (!is_string($input)) {
 					throw new Exception("input must be a string");
 				}
@@ -1354,7 +1292,7 @@
 				}
 				return explode($del, $input);
 			});
-			self::extendModifier("replace", function ($input, $search, $replace) {
+			self::extendModifier("replace", function (string $input, $search, $replace) {
 				if (!is_string($input)) {
 					throw new Exception("input must be a string");
 				}
@@ -1366,13 +1304,13 @@
 				}
 				return str_replace($search, $replace, $input);
 			});
-			self::extendModifier("preventTagEncode", function ($input) {
+			self::extendModifier("preventTagEncode", function (string $input) {
 				return $input;
 			});
-			self::extendModifier("default", function ($input, $default) {
+			self::extendModifier("default", function (string $input, $default) {
 				return (empty($input) ? $default : $input);
 			});
-			self::extendModifier("contextJs", function ($input, $in_str) {
+			self::extendModifier("contextJs", function (string $input, $in_str) {
 				if ((is_object($input) || is_array($input)) && !$in_str) {
 					return json_encode($input);
 				} else if (is_numeric($input) || is_bool($input)) {
@@ -1391,14 +1329,14 @@
 					
 				}
 			});
-			self::extendModifier("contextOutTag", function ($input) {
+			self::extendModifier("contextOutTag", function (string $input) {
 				if (is_object($input) || is_array($input)) {
 					return var_dump($input);
 				} else {
 					return htmlentities($input, ENT_QUOTES);
 				}
 			});
-			self::extendModifier("contextTag", function ($input, $in_str) {
+			self::extendModifier("contextTag", function (string $input, $in_str) {
 				if ((is_object($input) || is_array($input)) && $in_str) {
 					return http_build_query($input);
 				} else {
@@ -1410,10 +1348,10 @@
 					
 				}
 			});
-			self::extendModifier("addDoubleQuotes", function ($input) {
+			self::extendModifier("addDoubleQuotes", function (string $input) {
 				return '"' . $input . '"';
 			});
-			self::extendModifier("ifEmpty", function ($input, $true_val, $false_val = null) {
+			self::extendModifier("ifEmpty", function (string $input, $true_val, $false_val = null) {
 				if (empty($true_val)) {
 					throw new Exception("true value is required");
 				}
@@ -1425,7 +1363,8 @@
 				}
 				return $ret;
 			});
-			self::extendModifier("if", function ($input, $condition, $true_val, $false_val = null, $operator = "eq") {
+			
+			self::extendModifier("if", function (string $input, $condition, $true_val, $false_val = null, $operator = "eq") {
 				if (empty($true_val)) {
 					throw new Exception("true value is required");
 				}
@@ -1458,14 +1397,16 @@
 						break;
 				}
 				$ret = $input;
-				if (eval('return ("' . $condition . '"' . $operator . '"' . $input . '");')) {
+				
+				$tmp_func = "return $condition$operator$input ? true : false;";
+				
+				if(eval($tmp_func)) {
 					$ret = $true_val;
-				} else if ($false_val) {
+				} else if($false_val) {
 					$ret = $false_val;
 				}
 				return $ret;
 			});
-			
 		}
 		
 		/**

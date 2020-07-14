@@ -7,10 +7,15 @@
 <body>
 <h1>Example</h1>
 
+<h2>Variables</h2>
+{$variable}
+
 <h2>Loops</h2>
-{loop $element in $array}
-{$element}<br />
-{endloop}
+<ul>
+    {loop $element in $array}
+    <li>{$element}</li>
+    {endloop}
+</ul>
 
 <h2>Includes</h2>
 {include example.html}
