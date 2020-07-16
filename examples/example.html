@@ -1,0 +1,10 @@
+<p>This text is in an included file.</p>
+
+<h2>if</h2>
+Check 1:<br />
+{if $integer > 5}
+    The integer is greater than 5.
+{endif}
+<br />
+Check 2:<br />
+The integer is {$integer.if(5,"exactly","not exactly")} 5, it is {$integer}.

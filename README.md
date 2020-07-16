@@ -1,8 +1,8 @@
 # tonic
 
-[![Build Status](https://travis-ci.org/rgamba/tonic.svg?branch=master)](https://travis-ci.org/rgamba/tonic)
-
 Super fast and powerful template engine. Pure PHP, zero dependencies.
+
+This fork of tonic continues the work of rgamba.
 
 ## Usage
 Using Tonic is pretty straight forward.
@@ -25,7 +25,7 @@ Using Tonic
 User role: {$role.lower().if("admin","administrator").capitalize()}
 </body>
 ```
-vs. writting all in PHP
+vs. writing all in PHP
 ```html
 <body>
 <h1>Welcome <?php echo (strlen($user["name"]) > 50 ? substr(ucwords($user["name"]),0,50)."..." : ucwords($user["name"])) ?></h1>
@@ -33,9 +33,14 @@ User role: <?php if(strtolower($role) == "admin") { echo "Administrator" } else 
 </body>
 ```
 ## Installation
+
 Install using composer
-```
-$ composer require rgamba/tonic
+```json
+{
+    "require": {
+        "nitricware/tonic": "^3.0"
+    }
+}
 ```
 ## Caching
 All tonic templates are compiled back to native PHP code. It's highly recommended that you use the caching functionality so that the same template doesn't need to be compiled over and over again increasing the CPU usage on server side.
@@ -224,6 +229,36 @@ Which is exactly the same as:
 {endif}
 ```
 
+## Localizing
+Tonic has localization support. Alter the calling as followed:
+
+```php
+use Tonic\Tonic;
+$tpl = new Tonic("demo.html", "localized.xml");
+$tpl->user_role = "member";
+echo $tpl->render();
+```
+
+If you want to use multiple localization files, use an array as the second construct parameter like so:
+
+```php
+$tpl = new Tonic("demo.html", array("localized.xml", "anotherFile.xml");
+```
+
+The file ```localized.xml``` can have any name (i.e. ```EN.xml```) but must be valid XML. Here’s its structure:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Strings>
+	<string>
+		<key>TEXT</key>
+		<value>Tonic will automatically load the specified localized text from the specified language file.</value>
+	</string>
+</Strings>
+```
+
+To access a localized string in you template use ```{$localized.FILENAME.KEY}``` while ```KEY``` is the key you used in the XML-Document and ```FILENAME```is the name of the localization file without the extension (i.e. ```EN```). In this example that would be ```{$localized.EN.TEXT}```.
+
 ## Template inheritance
 Tonic supports single template inheritance. The idea behind this is to keep things nice and simple. Multiple inheritance can lead to complicated views difficult to maintain.
 
@@ -300,8 +335,14 @@ is exactly the same as:
 <div tn-block="myBlock"><h1>Welcome</h1></div>
 ```
 
+## Roadmap
+
+* add more ```@throws``` instead of  ```@return bool|void```.
 
 ## Changelog
+* 16-07-2020 - 3.3.1 - composer fixes
+* 14-07-2020 - 3.3   - PHP 7.4 Update: added type hinting and removed unused functionality
+* 10-05-2019 - 3.2   - NitricWare Fork: Localization Support
 * 11-10-2016 - 3.1.0 - Added support for template inheritance
 * 25-03-2015 - 3.0.0 - Added Context Awareness and Maco Syntax for ifs and loops
 * 23-03-2015 - 2.2.0 - Added namespace support and added modifier exceptions
