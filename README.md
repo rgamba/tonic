@@ -340,6 +340,7 @@ is exactly the same as:
 * add more ```@throws``` instead of  ```@return bool|void```.
 
 ## Changelog
+* 16-07-2020 - 3.3.1 - composer fixes
 * 14-07-2020 - 3.3   - PHP 7.4 Update: added type hinting and removed unused functionality
 * 10-05-2019 - 3.2   - NitricWare Fork: Localization Support
 * 11-10-2016 - 3.1.0 - Added support for template inheritance
