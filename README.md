@@ -25,7 +25,7 @@ Using Tonic
 User role: {$role.lower().if("admin","administrator").capitalize()}
 </body>
 ```
-vs. writting all in PHP
+vs. writing all in PHP
 ```html
 <body>
 <h1>Welcome <?php echo (strlen($user["name"]) > 50 ? substr(ucwords($user["name"]),0,50)."..." : ucwords($user["name"])) ?></h1>

@@ -1,6 +1,5 @@
 {
   "name": "nitricware/tonic",
-  "version": "3.3",
   "type": "library",
   "description": "PHP template engine without dependencies.",
   "keywords": ["php","template","html"],
@@ -22,6 +21,11 @@
   ],
   "support": {
     "email": "office@nitricware.com"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tonic\\": "src/"
+    }
   },
   "require": {
     "php": ">=7.4"
